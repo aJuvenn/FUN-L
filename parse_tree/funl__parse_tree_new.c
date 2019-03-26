@@ -71,10 +71,24 @@ FLParseTree * flParseTreeNewDef(const char * name, FLParseTree * expr)
 	return output;
 }
 
+FLParseTree * flParseTreeNewLet(const char * variable, FLParseTree * affectExpr, FLParseTree * followingExpr)
+{
+	FLParseTree * output = flParseTreeNew();
+
+	output->type = FL_PARSE_TREE_LET;
+	output->data.let.variable = variable;
+	output->data.let.affect = affectExpr;
+	output->data.let.following = followingExpr;
+
+	return output;
+}
 
 
 void flParseTreeFree(FLParseTree * tree)
 {
+	/*
+	 * TODO
+	 */
 	return;
 }
 

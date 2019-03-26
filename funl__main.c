@@ -9,7 +9,8 @@
 
 int main(int argc, char **argv) {
 
-	const char * s = "(def True (fun (x y) x))";
+	const char * s = "let true fun (x y) x let false fun (x y) y let if fun (bool then else) (bool then else) true";
+
 	FLStreamCursor cursor = s;
 
 	FlToken tk;

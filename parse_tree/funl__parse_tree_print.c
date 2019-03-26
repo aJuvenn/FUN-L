@@ -62,6 +62,14 @@ void flParseTreePrintDef(const FLParseTree * const tree)
 	printf(")");
 }
 
+void flParseTreePrintLet(const FLParseTree * const tree)
+{
+	printf("(let %s ", tree->data.let.variable);
+	flParseTreePrint(tree->data.let.affect);
+	printf(" ");
+	flParseTreePrint(tree->data.let.following);
+	printf(")");
+}
 
 
 void flParseTreePrintInvalid(const FLParseTree * const tree)
@@ -94,6 +102,10 @@ void flParseTreePrint(const FLParseTree * const tree)
 
 	case FL_PARSE_TREE_FUN:
 		flParseTreePrintFun(tree);
+		return;
+
+	case FL_PARSE_TREE_LET:
+		flParseTreePrintLet(tree);
 		return;
 
 	case FL_PARSE_TREE_INVALID:

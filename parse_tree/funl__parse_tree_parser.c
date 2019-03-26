@@ -16,7 +16,7 @@ FLParseTree * flParseTreeNewVar(const char * name);
 FLParseTree * flParseTreeNewCall(FLParseTree * func, size_t nbArguments, FLParseTree ** args);
 FLParseTree * flParseTreeNewFun(size_t nbParameters, char ** params, FLParseTree * body);
 FLParseTree * flParseTreeNewDef(const char * name, FLParseTree * expr);
-
+FLParseTree * flParseTreeNewLet(const char * variable, FLParseTree * affectExpr, FLParseTree * followingExpr);
 
 FLParseTree * flParseTreeRecursive(FLStreamCursor const cursor, FLStreamCursor * const out_nextCursor);
 
@@ -30,12 +30,12 @@ FLParseTree * flParseTreeLeftBracket(FLStreamCursor const cursor, FLStreamCursor
 		return NULL;
 	}
 
-	FLStreamCursor nextCursor = *out_nextCursor;
+	FLStreamCursor nextCursor;
 	FLStreamCursor nextNextCursor;
 	size_t nbArguments = 0;
 	FLParseTree * arguments[FL_PARSER_MAXIMUM_ARITY];
 
-	for (nextCursor = *out_nextCursor ; ; nextNextCursor = nextCursor){
+	for (nextCursor = *out_nextCursor ; ; nextCursor = nextNextCursor){
 
 		FLParseTree * nextTree = flParseTreeRecursive(nextCursor, &nextNextCursor);
 
@@ -156,7 +156,32 @@ FLParseTree * flParseFunTree(FLStreamCursor const cursor, FLStreamCursor * const
 
 FLParseTree * flParseLetTree(FLStreamCursor const cursor, FLStreamCursor * const out_nextCursor)
 {
-	return NULL;
+	FlToken token;
+	FLStreamCursor nextCursor = flTokenNext(cursor, &token);
+
+	if (token.type != FL_TOKEN_VARIABLE){
+		goto INVALID;
+	}
+
+	FLParseTree * affect = flParseTreeRecursive(nextCursor, out_nextCursor);
+
+	if (affect == NULL){
+		goto INVALID;
+	}
+
+	FLParseTree * following = flParseTreeRecursive(*out_nextCursor, out_nextCursor);
+
+	if (following == NULL){
+		flParseTreeFree(affect);
+		goto INVALID;
+	}
+
+	return flParseTreeNewLet(token.data.variableName, affect, following);
+
+	INVALID:{
+		flTokenFree(&token);
+		return NULL;
+	}
 }
 
 
@@ -208,7 +233,13 @@ FLParseTree * flParseTreeRecursive(FLStreamCursor const cursor, FLStreamCursor *
 FLParseTree * flParseTree(FLStreamCursor cursor)
 {
 	FLStreamCursor endCursor;
-	return flParseTreeRecursive(cursor, &endCursor);
+	FLParseTree * output = flParseTreeRecursive(cursor, &endCursor);
+
+	if (output == NULL){
+		printf("Cursor stopped at %p (%lu character)\n", endCursor, endCursor - cursor);
+	}
+
+	return output;
 }
 
 
