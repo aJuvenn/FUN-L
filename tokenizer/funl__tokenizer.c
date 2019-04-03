@@ -12,33 +12,34 @@
 
 int flIsValidCharForVariableName(char c)
 {
-	return isgraph(c) && c != '(' && c != ')';
+	return isgraph(c) && c != '(' && c != ')' && c != ';';
 }
 
 
 static const char * flKeyWords[FL_KEY_WORD_MAX_VALUE] = {
 		"fun",
-		"def",
-		"let"
+		"let",
+		"in",
+		"rec"
 };
 
 
-const char * flTokenNextFromWord(const char * const cursor, FlToken * const out_token)
+void flTokenNextFromWord(FLStreamCursor * const cursor, FlToken * const out_token)
 {
 	unsigned wordSize = 0;
 
-	while (flIsValidCharForVariableName(cursor[wordSize])){
+	while (flIsValidCharForVariableName((*cursor)[wordSize])){
 		wordSize++;
 	}
 
 	if (wordSize == 0){
 		out_token->type = FL_TOKEN_INVALID;
-		return NULL;
+		return;
 	}
 
 	char * tokenName;
 	FL_SIMPLE_ALLOC(tokenName, wordSize + 1);
-	memcpy(tokenName, cursor, wordSize);
+	memcpy(tokenName, *cursor, wordSize);
 	tokenName[wordSize] = 0;
 
 	for (FlTokenKeyWordData kw = 0 ; kw < FL_KEY_WORD_MAX_VALUE ; ++kw){
@@ -52,49 +53,54 @@ const char * flTokenNextFromWord(const char * const cursor, FlToken * const out_
 		out_token->type = FL_TOKEN_KEYWORD;
 		out_token->data.keyword = kw;
 
-		return cursor + wordSize;
+		*cursor += wordSize;
+		return;
 	}
 
 	out_token->type = FL_TOKEN_VARIABLE;
 	out_token->data.variableName = tokenName;
-
-	return cursor + wordSize;
+	*cursor += wordSize;
 }
 
 
 
-FLStreamCursor flTokenNext(FLStreamCursor const cursor, FlToken * const out_token)
+void flTokenNext(FLStreamCursor * const cursor, FlToken * const out_token)
 {
-	if (cursor == NULL || out_token == NULL){
-		return NULL;
+	if (cursor == NULL || *cursor == NULL || out_token == NULL){
+		return;
 	}
 
-	const char * outCursor = cursor;
-
-	while (isspace(*outCursor)){
-		outCursor++;
+	while (isspace(**cursor)){
+		(*cursor)++;
 	}
 
-	switch (*outCursor){
+	switch (**cursor){
 
 	case 0:
 	case EOF:
 		out_token->type = FL_TOKEN_END_OF_STREAM;
-		return outCursor;
+		return;
 
 	case '(':
 		out_token->type = FL_TOKEN_LEFT_BRACKET;
-		return outCursor + 1;
+		(*cursor)++;
+		return;
 
 	case ')':
 		out_token->type = FL_TOKEN_RIGHT_BRACKET;
-		return outCursor + 1;
+		(*cursor)++;
+		return;
+
+	case ';':
+		out_token->type = FL_TOKEN_SEMICOLON;
+		(*cursor)++;
+		return;
 
 	default:
-		break;
+		flTokenNextFromWord(cursor, out_token);
+		return;
 	}
 
-	return flTokenNextFromWord(outCursor, out_token);
 }
 
 
@@ -125,6 +131,10 @@ void flTokenPrint(const FlToken * const tk)
 
 	case FL_TOKEN_INVALID:
 		printf("INVALID");
+		return;
+
+	case FL_TOKEN_SEMICOLON:
+		printf("SEMICOLON");
 		return;
 
 	default:

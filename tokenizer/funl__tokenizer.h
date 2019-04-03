@@ -18,6 +18,7 @@ typedef enum {
 	FL_TOKEN_VARIABLE,
 	FL_TOKEN_LEFT_BRACKET,
 	FL_TOKEN_RIGHT_BRACKET,
+	FL_TOKEN_SEMICOLON,
 	FL_TOKEN_KEYWORD,
 
 	FL_TOKEN_END_OF_STREAM
@@ -29,8 +30,9 @@ typedef enum {
 typedef enum {
 
 	FL_KEYWORD_FUN = 0,
-	FL_KEYWORD_DEF = 1,
-	FL_KEY_WORD_LET = 2,
+	FL_KEY_WORD_LET,
+	FL_KEY_WORD_IN,
+	FL_KEY_WORD_REC,
 
 	FL_KEY_WORD_MAX_VALUE
 
@@ -52,7 +54,8 @@ typedef struct {
 
 typedef const char * FLStreamCursor;
 
-FLStreamCursor flTokenNext(FLStreamCursor const cursor, FlToken * const out_token);
+
+void flTokenNext(FLStreamCursor * const cursor, FlToken * const out_token);
 
 void flTokenPrint(const FlToken * const tk);
 

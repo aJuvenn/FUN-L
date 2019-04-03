@@ -17,7 +17,6 @@ typedef enum {
 	FL_PARSE_TREE_VAR,
 	FL_PARSE_TREE_CALL,
 	FL_PARSE_TREE_FUN,
-	FL_PARSE_TREE_DEF,
 	FL_PARSE_TREE_LET
 
 } FLParseTreeType;
@@ -51,18 +50,12 @@ typedef struct {
 
 typedef struct {
 
-	const char * variableName;
-	FLParseTree * expression;
-
-} FLParseTreeDefData;
-
-
-typedef struct {
-
 	const char * variable;
 	FLParseTree * affect;
 
 	FLParseTree * following;
+
+	int recursive;
 
 } FLParseTreeLetData;
 
@@ -80,7 +73,6 @@ struct FLParseTree {
 		const char * var;
 		FLParseTreeCallData call;
 		FLParseTreeFunData fun;
-		FLParseTreeDefData def;
 		FLParseTreeLetData let;
 
 	} data;

@@ -60,18 +60,8 @@ FLParseTree * flParseTreeNewFun(size_t nbParameters, char ** params, FLParseTree
 }
 
 
-FLParseTree * flParseTreeNewDef(const char * name, FLParseTree * expr)
-{
-	FLParseTree * output = flParseTreeNew();
 
-	output->type = FL_PARSE_TREE_DEF;
-	output->data.def.variableName = name;
-	output->data.def.expression = expr;
-
-	return output;
-}
-
-FLParseTree * flParseTreeNewLet(const char * variable, FLParseTree * affectExpr, FLParseTree * followingExpr)
+FLParseTree * flParseTreeNewLet(const char * variable, FLParseTree * affectExpr, FLParseTree * followingExpr, int recursive)
 {
 	FLParseTree * output = flParseTreeNew();
 
@@ -79,6 +69,7 @@ FLParseTree * flParseTreeNewLet(const char * variable, FLParseTree * affectExpr,
 	output->data.let.variable = variable;
 	output->data.let.affect = affectExpr;
 	output->data.let.following = followingExpr;
+	output->data.let.recursive = recursive;
 
 	return output;
 }

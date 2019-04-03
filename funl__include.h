@@ -18,4 +18,10 @@
 #include "tokenizer/funl__tokenizer.h"
 #include "parse_tree/funl__parse_tree.h"
 
+#include "virtual_machine/funl__term.h"
+#include "virtual_machine/funl__environnement.h"
+#include "virtual_machine/funl__krivine_machine.h"
+
+
+
 #endif /* FUNL__INCLUDE_H_ */

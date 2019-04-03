@@ -1,29 +1,255 @@
-
+let identity
+	fun (x) x;
 
 let true
-	fun (x y) x
+	fun (x y) x;
 	
 let false
-	fun (x y) y
+	fun (x y) y;
 	
 let if
 	fun (b then else)
-		(b then else)
+		(b then else);
 		
 let and
 	fun (b1 b2)
-		(if b1 b2 false)
+		(if b1 b2 false);
 		
 let or
 	fun (b1 b2)
-		(if b1 true b2)
+		(if b1 true b2);
 		
 let not
 	fun (b)
-		(if b false true)
+		(if b false true);
+
+
+let cons
+	fun (x y f)
+		(f x y);
 		
-(or (and true false)
-	(or false (not false)) 
+let fst
+	fun (c)
+		(c true);
+		
+let snd
+	fun (c)
+		(c false);
+		
+		
+		
+let []
+	fun (x) true;
+	
+	
+let isempty?
+	fun (l)
+		(l (fun (x y) false));
+	
+	
+
+let head fst;
+
+
+let tail 
+	fun (l)
+		(if (isempty? l)
+			[]
+			(snd l)
+		);
+		
+
+let rec foldl
+	fun (f l b)
+		(if (isempty? l)
+			b
+			(f (head l) (foldl f (tail l) b))
+		);
+	
+			
+let rec foldr
+	fun (f l b)
+		(if (isempty? l)
+			b
+			(foldr f (tail l) (f (head l) b))
+		);
+		
+			
+let rec map
+	fun (f l)
+		(if (isempty? l)
+			[]
+			(cons (f (head l)) 
+				  (map f (tail l))
+			)
+		);
+			
+			
+let rec apply
+	fun (f l)
+		(if (isempty? l)
+			(apply (f (head l)) 
+				   (tail l)
+			)
+		);
+			
+			
+let concat
+	fun (l1 l2)
+		(foldl cons l1 l2);
+
+		
+let reverse
+	fun (l)
+		(foldr cons l []);
+		
+		
+let rec append
+	fun (x l)
+		(if (isempty ? l)
+			(cons x [])
+			(cons (head l) (append x (tail l)))
+		);
+
+
+let succ 
+	fun (n)
+		(cons identity n);
+
+let 0 [];
+let 1 (succ 0);
+let 2 (succ 1);
+let 3 (succ 2);
+
+
+let iszero? isempty?;
+let pred tail;
+
+
+
+
+let =
+	fun (a b)
+		(and (iszero? (- b a))
+			 (iszero? (- a b))
+		);
+		
+let >
+	fun (a b)
+		(not (iszero? (- a b)));
+		
+		
+let <
+	fun (a b)
+		(> b a);
+		
+let >=
+	fun (a b)
+		(or (> a b)
+			(= a b)
+		);
+		
+let <=
+	fun (a b)
+		(>= b a);
+		
+		
+
+
+let rec iterate
+	fun (nb-times f x)
+		(if (zero? nb-times)
+			x
+			(f (iterate (pred nb-times) f x)
+		);
+
+	
+let +
+	fun (a b)
+		(iterate b succ a);
+
+let -
+	fun (a b)
+		(iterate b pred a);
+
+let *
+	fun (a b)
+		(iterate a (+ b) 0);
+	
+let ^
+	fun (a b)
+		(iterate b (* a) 1);
+
+
+let rec /
+	fun (a b)
+		(if (< a b)
+			0
+			(succ (/ (- a b) b))
+		);
+		
+		
+let %
+	fun (a b)
+		(- a 
+		   (* b 
+		   	  (/ a b)
+		   )
+		);
+		
+		
+let rec pgcd
+	fun (a b)
+		(if (iszero? b)
+			a
+			(pgcd b (% a b))
+		);	
+
+
+	
+		
+
+
+let rec issorted?
+	fun (l)
+		let t 
+			(tail l)
+		in
+		(if (or (isempty? l) (isempty? t))
+			true
+			(and (<= (head l) (head t))
+				 (issorted? t)
+			);
+			
+			
+let rec insert
+	fun (less-or-equal? x l)
+		(if (isempty? l)
+			(cons x [])
+			let y 
+				(head l)
+			in
+			(if (less-or-equal? x y)
+				(cons x l)
+				(cons y (insert less-or-equal? x (tail l))
+			);
+		
+
+let rec sort
+	fun (less-or-equal? l)
+		(if (isempty? l)
+			[]
+			let sorted-tail 
+				(sort less-or-equal? (tail l)) 
+			in
+			(insert less-or-equal? (head l) sorted-tail)
+		);
+			
+			
+			
+			
+			
+(sort <= (cons 4 (cons 2 (cons 3 []))))		
 		
 		
 		

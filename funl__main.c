@@ -9,14 +9,14 @@
 
 int main(int argc, char **argv) {
 
-	const char * s = "let true fun (x y) x let false fun (x y) y let if fun (bool then else) (bool then else) true";
+	const char * s = "let rec true fun (x y) let z (+ x y) in z;";
 
 	FLStreamCursor cursor = s;
 
 	FlToken tk;
 
 	do {
-		cursor = flTokenNext(cursor, &tk);
+		flTokenNext(&cursor, &tk);
 		flTokenPrint(&tk);
 		printf("\n");
 
@@ -26,10 +26,38 @@ int main(int argc, char **argv) {
 			&& tk.type != FL_TOKEN_INVALID);
 
 	cursor = s;
-	FLParseTree * tree = flParseTree(cursor);
 
+	printf("\nParsing Tree...\n");
+	FLParseTree * tree = flParseTree(cursor);
+	printf("Done. Printing tree...\n\n");
 	flParseTreePrint(tree);
+	printf("\n\nDone.\n");
 	flParseTreeFree(tree);
+	printf("\n");
+
+
+	FLTerm * trueTerm =  flTermParse("(L.0) (L.L.1)");
+	FLTerm * falseTerm = flTermParse("(L.0) (L.L.0)");
+	FLTerm * ifTerm = flTermParse("(L.0) (L.L.L.((2) (1)) (0))");
+	FLTerm * andTerm = flTermParse("L.L.(((2) (1)) (0)) (3)");
+	FLTerm * orTerm = flTermParse("L.L.(((3) (1)) (5)) (0)");
+
+	FLTerm * ifTrueAndFalseThenTrueElseFalseOrTrue = flTermParse(
+			"(((2) (((1) (4)) (3))) (4)) (((0) (3)) (4))"
+	);
+
+	FLEnvironment env;
+	flEnvironmentInit(&env, 25, 100);
+
+
+	flVMEvaluateAndSaveTerm(trueTerm, &env);
+	flVMEvaluateAndSaveTerm(falseTerm, &env);
+	flVMEvaluateAndSaveTerm(ifTerm, &env);
+	flVMEvaluateAndSaveTerm(andTerm, &env);
+	flVMEvaluateAndSaveTerm(orTerm, &env);
+
+
+	flVMEvaluateTerm(ifTrueAndFalseThenTrueElseFalseOrTrue, &env);
 
 	return 0;
 
