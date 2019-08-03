@@ -37,8 +37,6 @@ typedef struct {
 
 typedef struct {
 
-	const char * functionName;
-
 	size_t nbParameters;
 	const char ** parameters;
 
@@ -88,17 +86,13 @@ struct FLParseTree {
 
 FLParseTree * flParseTree(FLStreamCursor cursor);
 
+FLParseTree * flParseTreeRecursive(FLStreamCursor * const cursor);
+
+
+
 void flParseTreePrint(const FLParseTree * const tree);
 
 void flParseTreeFree(FLParseTree * tree);
-
-
-
-
-
-
-
-
 
 
 

@@ -20,7 +20,9 @@ typedef enum {
 
 	FL_TERM_CALL,
 	FL_TERM_FUN,
-	FL_TERM_VAR_ID
+	FL_TERM_VAR_ID,
+	FL_TERM_GLOBAL_VAR_ID,
+	FL_TERM_LET
 
 } FLTermType;
 
@@ -33,6 +35,15 @@ typedef struct {
 } FLTermCallData;
 
 
+typedef struct {
+
+	FLTerm * affect;
+	FLTerm * following;
+
+} FLTermLetData;
+
+
+
 typedef uint32_t FLTermId;
 
 
@@ -43,6 +54,7 @@ struct FLTerm {
 	union {
 
 		FLTermCallData call;
+		FLTermLetData let;
 		FLTerm * funBody;
 		FLTermId varId;
 
@@ -51,11 +63,33 @@ struct FLTerm {
 
 
 
+
+
+typedef FLTerm * (*FLTermManipulator)(const FLTerm * const);
+
+FLTerm * flTermCopy(const FLTerm * const term);
+FLTerm * flTermApply(FLTerm * term, FLTermManipulator f);
+
+
 FLTerm * flTermNewVarId(FLTermId id);
+FLTerm * flTermNewGlobalVarId(FLTermId id);
 FLTerm * flTermNewFun(FLTerm * body);
 FLTerm * flTermNewCall(FLTerm * fun, FLTerm * arg);
-void flTermPrint(const FLTerm * const term);
+FLTerm * flTermNewLet(FLTerm * affect, FLTerm * following);
+
+
 FLTerm * flTermParse(const char * const str);
 
+
+void flTermPrint(const FLTerm * const term);
+void flTermFree(FLTerm * term);
+
+
+#define FL_TERM_DEBUG_PRINT(x)\
+	do {\
+		printf("%s %s : ", __FUNCTION__, #x);\
+		flTermPrint(x);\
+		printf("\n");\
+	} while (0)
 
 #endif /* VIRTUAL_MACHINE_FUNL__TERM_H_ */
