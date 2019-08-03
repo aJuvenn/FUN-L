@@ -28,9 +28,11 @@ FLEnvironment * flEnvironmentNew(const size_t maximumSize)
 
 void flEnvironmentFree(FLEnvironment * env)
 {
-	/*
-	 * TODO : free inside ?
-	 */
+	for (size_t i = 0 ; i < env->nbGlobalVar ; i++){
+		free(env->globalVarNames[i]);
+		flTermFree(env->globalTerms[i]);
+	}
+
 	free(env->varNameStack);
 	free(env->globalTerms);
 	free(env->globalVarNames);

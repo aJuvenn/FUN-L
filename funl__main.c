@@ -132,7 +132,7 @@ int main(int argc, char * argv[])
 
 	printf("%s", data);
 
-	FLEnvironment * env2 = flEnvironmentNew(1000);
+	FLEnvironment * env2 = flEnvironmentNew(100000);
 	eval(data, env2);
 
 

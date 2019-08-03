@@ -308,7 +308,9 @@ let rec pgcd
 	fun (a b)
 		(if (iszero? b)
 			a
-			(pgcd b (% a b))
+			
+			let mod (% a b) in
+			(pgcd b mod)
 		);	
 	
 	
@@ -316,13 +318,15 @@ let rec insert
 	fun (less-or-equal? x l)
 		(if (isempty? l)
 			(cons x [])
-			
 			let y 
 				(head l)
 			in
 			(if (less-or-equal? x y)
 				(cons x l)
-				(cons y (insert less-or-equal? x (tail l)))
+				
+				let t (tail l) in
+				let rec-call (insert less-or-equal? x t)
+				in (cons y rec-call)
 			)
 		);	
 	
@@ -331,10 +335,10 @@ let rec sort
 	fun (less-or-equal? l)
 		(if (isempty? l)
 			[]
-			let sorted-tail 
-				(sort less-or-equal? (tail l)) 
-			in
-			(insert less-or-equal? (head l) sorted-tail)
+			let h (head l) in
+			let t (tail l) in
+			let sorted-tail (sort less-or-equal? t) 
+			in (insert less-or-equal? h sorted-tail)
 		);
 			
 			
@@ -346,12 +350,11 @@ let rec sort
 (= (+ 1 1) 3)
 (= (* 2 2) (+ 3 1))
 
-(sort <= (cons 4 (cons 2 (cons 3 []))))	
+(sort <= (cons 4 (cons 2 (cons 3 []))))		
 
-let l
-	(sort <= (cons 4 (cons 2 (cons 3 []))))		
-in
-	(head l)
+
+	
+
 
 
 
