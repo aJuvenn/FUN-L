@@ -1,11 +1,11 @@
-let identity
-	fun (x) x;
-
-let true
-	fun (x y) x;
-	
 let false
 	fun (x y) y;
+	
+let true
+	fun (x y) x;
+		
+let identity
+	fun (x) x;
 	
 let if
 	fun (b t e)
@@ -59,20 +59,300 @@ let tail
 			[]
 			(snd l)
 		);
-			
-
-
-let empty
-	[] 
-in
-let one-element
-	(cons true empty)
-in
-let two-elements
-	(cons identity one-element)
-in
-let l
-	(cons true two-elements)
-in
-	(head (tail l)) 
 	
+	
+	
+let rec foldl
+	fun (f l b)
+		(if (isempty? l)
+			b
+			(f (head l) (foldl f (tail l) b))
+		);
+		
+		
+
+let rec foldr
+	fun (f l b)
+		(if (isempty? l)
+			b
+			(foldr f (tail l) (f (head l) b))
+		);
+		
+			
+let rec map
+	fun (f l)
+		(if (isempty? l)
+			[]
+			(cons (f (head l)) 
+				  (map f (tail l))
+			)
+		);
+			
+			
+let rec apply
+	fun (f l)
+		(if (isempty? l)
+			(apply (f (head l)) 
+				   (tail l)
+			)
+		);
+			
+			
+let concat
+	fun (l1 l2)
+		(foldl cons l1 l2);
+
+		
+let reverse
+	fun (l)
+		(foldr cons l []);
+		
+		
+let rec append
+	fun (x l)
+		(if (isempty? l)
+			(cons x [])
+			(cons (head l) (append x (tail l)))
+		);
+
+		
+		
+
+let succ 
+	fun (n)
+		(cons identity n);
+
+let 0 [];
+let 1 (succ 0);
+let 2 (succ 1);
+let 3 (succ 2);
+let 4 (succ 3);
+let 5 (succ 4);
+let 6 (succ 5);
+let 7 (succ 6);
+let 8 (succ 7);
+let 9 (succ 8);
+let 10 (succ 9);
+let 11 (succ 10);
+let 12 (succ 11);
+let 13 (succ 12);
+let 14 (succ 13);
+let 15 (succ 14);
+let 16 (succ 15);
+let 17 (succ 16);
+let 18 (succ 17);
+let 19 (succ 18);
+let 20 (succ 19);
+let 21 (succ 20);
+let 22 (succ 21);
+let 23 (succ 22);
+let 24 (succ 23);
+let 25 (succ 24);
+let 26 (succ 25);
+let 27 (succ 26);
+let 28 (succ 27);
+let 29 (succ 28);
+let 30 (succ 29);
+let 31 (succ 30);
+let 32 (succ 31);
+let 33 (succ 32);
+let 34 (succ 33);
+let 35 (succ 34);
+let 36 (succ 35);
+let 37 (succ 36);
+let 38 (succ 37);
+let 39 (succ 38);
+let 40 (succ 39);
+let 41 (succ 40);
+let 42 (succ 41);
+let 43 (succ 42);
+let 44 (succ 43);
+let 45 (succ 44);
+let 46 (succ 45);
+let 47 (succ 46);
+let 48 (succ 47);
+let 49 (succ 48);
+let 50 (succ 49);
+let 51 (succ 50);
+let 52 (succ 51);
+let 53 (succ 52);
+let 54 (succ 53);
+let 55 (succ 54);
+let 56 (succ 55);
+let 57 (succ 56);
+let 58 (succ 57);
+let 59 (succ 58);
+let 60 (succ 59);
+let 61 (succ 60);
+let 62 (succ 61);
+let 63 (succ 62);
+let 64 (succ 63);
+let 65 (succ 64);
+let 66 (succ 65);
+let 67 (succ 66);
+let 68 (succ 67);
+let 69 (succ 68);
+let 70 (succ 69);
+let 71 (succ 70);
+let 72 (succ 71);
+let 73 (succ 72);
+let 74 (succ 73);
+let 75 (succ 74);
+let 76 (succ 75);
+let 77 (succ 76);
+let 78 (succ 77);
+let 79 (succ 78);
+let 80 (succ 79);
+let 81 (succ 80);
+let 82 (succ 81);
+let 83 (succ 82);
+let 84 (succ 83);
+let 85 (succ 84);
+let 86 (succ 85);
+let 87 (succ 86);
+let 88 (succ 87);
+let 89 (succ 88);
+let 90 (succ 89);
+let 91 (succ 90);
+let 92 (succ 91);
+let 93 (succ 92);
+let 94 (succ 93);
+let 95 (succ 94);
+let 96 (succ 95);
+let 97 (succ 96);
+let 98 (succ 97);
+let 99 (succ 98);
+let 100 (succ 99);
+
+let iszero? isempty?;
+let pred tail;
+
+
+let rec iterate
+	fun (nb-times f x)
+		(if (iszero? nb-times)
+			x
+			(f (iterate (pred nb-times) f x))
+		);
+		
+	
+	
+let +
+	fun (a b)
+		(iterate b succ a);
+
+let -
+	fun (a b)
+		(iterate b pred a);
+
+let *
+	fun (a b)
+		(iterate a (+ b) 0);
+	
+let ^
+	fun (a b)
+		(iterate b (* a) 1);
+
+
+
+
+let =
+	fun (a b)
+		(and (iszero? (- b a))
+			 (iszero? (- a b))
+		);
+		
+let >
+	fun (a b)
+		(not (iszero? (- a b)));
+		
+		
+let <
+	fun (a b)
+		(> b a);
+		
+let >=
+	fun (a b)
+		(or (> a b)
+			(= a b)
+		);
+		
+let <=
+	fun (a b)
+		(>= b a);
+		
+	
+	
+		
+	
+	
+
+let rec /
+	fun (a b)
+		(if (< a b)
+			0
+			(succ (/ (- a b) b))
+		);
+		
+		
+let %
+	fun (a b)
+		(- a 
+		   (* b 
+		   	  (/ a b)
+		   )
+		);
+		
+		
+let rec pgcd
+	fun (a b)
+		(if (iszero? b)
+			a
+			(pgcd b (% a b))
+		);	
+	
+	
+let rec insert
+	fun (less-or-equal? x l)
+		(if (isempty? l)
+			(cons x [])
+			
+			let y 
+				(head l)
+			in
+			(if (less-or-equal? x y)
+				(cons x l)
+				(cons y (insert less-or-equal? x (tail l)))
+			)
+		);	
+	
+	
+let rec sort
+	fun (less-or-equal? l)
+		(if (isempty? l)
+			[]
+			let sorted-tail 
+				(sort less-or-equal? (tail l)) 
+			in
+			(insert less-or-equal? (head l) sorted-tail)
+		);
+			
+			
+	
+(<= 3 2)
+(<= 2 3)
+(= (+ 1 1) 2)
+(= (+ 1 1) 0)		
+(= (+ 1 1) 3)
+(= (* 2 2) (+ 3 1))
+
+(sort <= (cons 4 (cons 2 (cons 3 []))))	
+
+let l
+	(sort <= (cons 4 (cons 2 (cons 3 []))))		
+in
+	(head l)
+
+
+
+

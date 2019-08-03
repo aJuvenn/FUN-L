@@ -30,7 +30,7 @@ FLTerm * flTermIncrementOutsideVarIds(const FLTerm * const term, const FLTermId 
 
 	case FL_TERM_CALL:
 		return flTermNewCall(flTermIncrementOutsideVarIds(term->data.call.func, minToIncrement, incrementOf),
-							 flTermIncrementOutsideVarIds(term->data.call.arg, minToIncrement, incrementOf));
+				flTermIncrementOutsideVarIds(term->data.call.arg, minToIncrement, incrementOf));
 
 
 	case FL_TERM_FUN:
@@ -39,7 +39,7 @@ FLTerm * flTermIncrementOutsideVarIds(const FLTerm * const term, const FLTermId 
 
 	case FL_TERM_LET:
 		return flTermNewLet(flTermIncrementOutsideVarIds(term->data.let.affect, minToIncrement, incrementOf),
-							flTermIncrementOutsideVarIds(term->data.let.following, minToIncrement + 1, incrementOf));
+				flTermIncrementOutsideVarIds(term->data.let.following, minToIncrement + 1, incrementOf));
 
 	default:
 		break;
@@ -87,7 +87,7 @@ FLTerm * flTermReplaceIdByArg(const FLTerm * const body, const FLTermId idToRepl
 
 	case FL_TERM_LET:
 		return flTermNewLet(flTermReplaceIdByArg(body->data.let.affect, idToReplace, arg),
-							flTermReplaceIdByArg(body->data.let.following, idToReplace + 1, arg));
+				flTermReplaceIdByArg(body->data.let.following, idToReplace + 1, arg));
 
 
 	default:
@@ -119,14 +119,19 @@ FLTerm * flTermEvaluationCall(const FLTerm * const call, FLEnvironment * const e
 	case FL_TERM_FUN:
 	{
 		FLTerm * replaceArgs = flTermReplaceIdByArg(evaluatedFunc->data.funBody, 0, call->data.call.arg);
+		flTermFree(evaluatedFunc);
+
+		if (replaceArgs == NULL){
+			return NULL;
+		}
 
 		output = flTermEvaluation(replaceArgs, env);
+		flTermFree(replaceArgs);
 
-		/*
-		 * TODO : free
-		 */
-		//flTermFree(evaluatedFunc);
-		//flTermFree(replaceArgs);
+		if (output == NULL){
+			return NULL;
+		}
+
 		return output;
 	}
 
@@ -134,29 +139,27 @@ FLTerm * flTermEvaluationCall(const FLTerm * const call, FLEnvironment * const e
 	case FL_TERM_GLOBAL_VAR_ID:
 	{
 		FLTerm * globalTerm = flGetTermFromGlobalId(evaluatedFunc->data.varId, env);
-
-		// TODO free
-		//flTermFree(evaluatedFunc);
+		flTermFree(evaluatedFunc);
 
 		if (globalTerm == NULL){
 			return NULL;
 		}
 
 		FLTerm * globalTermInCall = flTermNewCall(globalTerm, flTermCopy(call->data.call.arg));
-
 		output = flTermEvaluation(globalTermInCall, env);
+		flTermFree(globalTermInCall);
 
-		// TODO free
-		//flTermFree(globalTermInCall);
+		if (output == NULL){
+			return NULL;
+		}
 
 		return output;
 	}
 
 	default:
-		break;
+		flTermFree(evaluatedFunc);
+		return NULL;
 	}
-
-	return NULL;
 }
 
 
@@ -170,17 +173,34 @@ FLTerm * flTermEvaluationLet(const FLTerm * const let, FLEnvironment * const env
 	}
 
 	FLTerm * replacedAffect = flTermReplaceIdByArg(let->data.let.following, 0, evaluatedAffect);
-	FLTerm * output = flTermEvaluation(replacedAffect, env);
-	/*
-	 * TODO : free
-	 */
+	flTermFree(evaluatedAffect);
 
-	//flTermFree(evaluatedAffect);
-	// flTermFree(replacedAffect);
+	if (replacedAffect == NULL){
+		return NULL;
+	}
+
+	FLTerm * output = flTermEvaluation(replacedAffect, env);
+	flTermFree(replacedAffect);
+
+	if (output == NULL){
+		return NULL;
+	}
 
 	return output;
 }
 
+
+
+FLTerm * flTermEvaluationFun(const FLTerm * const fun, FLEnvironment * const env)
+{
+	FLTerm * recCall = flTermEvaluation(fun->data.funBody, env);
+
+	if (recCall == NULL){
+		return NULL;
+	}
+
+	return flTermNewFun(recCall);
+}
 
 
 FLTerm * flTermEvaluation(const FLTerm * const term, FLEnvironment * const env)
@@ -191,22 +211,14 @@ FLTerm * flTermEvaluation(const FLTerm * const term, FLEnvironment * const env)
 
 	switch (term->type){
 
-	case FL_TERM_FUN:{
-
-		FLTerm * recCall = flTermEvaluation(term->data.funBody, env);
-
-		if (recCall == NULL){
-			return NULL;
-		}
-
-		return flTermNewFun(recCall);
-	}
-
 	case FL_TERM_VAR_ID:
 		return flTermNewVarId(term->data.varId);
 
 	case FL_TERM_GLOBAL_VAR_ID:
 		return flTermNewGlobalVarId(term->data.varId);
+
+	case FL_TERM_FUN:
+		return flTermEvaluationFun(term, env);
 
 	case FL_TERM_CALL:
 		return flTermEvaluationCall(term, env);

@@ -65,10 +65,6 @@ struct FLTerm {
 
 
 
-typedef FLTerm * (*FLTermManipulator)(const FLTerm * const);
-
-FLTerm * flTermCopy(const FLTerm * const term);
-FLTerm * flTermApply(FLTerm * term, FLTermManipulator f);
 
 
 FLTerm * flTermNewVarId(FLTermId id);
@@ -76,6 +72,8 @@ FLTerm * flTermNewGlobalVarId(FLTermId id);
 FLTerm * flTermNewFun(FLTerm * body);
 FLTerm * flTermNewCall(FLTerm * fun, FLTerm * arg);
 FLTerm * flTermNewLet(FLTerm * affect, FLTerm * following);
+
+FLTerm * flTermCopy(const FLTerm * const term);
 
 
 FLTerm * flTermParse(const char * const str);

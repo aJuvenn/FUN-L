@@ -76,4 +76,54 @@ FLTermId flGlobalIdFromName(const char * const globalVarName, const FLEnvironmen
 
 
 
+void flTermPrettyPrint(const FLTerm * const term, const FLEnvironment * const env)
+{
+	if (term == NULL){
+		printf("(NULL)");
+		return;
+	}
+
+	switch (term->type){
+
+	case FL_TERM_VAR_ID:
+		printf("%u", term->data.varId);
+		return;
+
+	case FL_TERM_GLOBAL_VAR_ID:
+
+		if (term->data.varId >= env->nbGlobalVar){
+			printf("<INVALID GLOBAL VARIABLE>");
+			return;
+		}
+
+		printf("'%s'", env->globalVarNames[term->data.varId]);
+		return;
+
+	case FL_TERM_FUN:
+		printf("L.");
+		flTermPrettyPrint(term->data.funBody, env);
+		return;
+
+	case FL_TERM_CALL:
+		printf("(");
+		flTermPrettyPrint(term->data.call.func, env);
+		printf(") (");
+		flTermPrettyPrint(term->data.call.arg, env);
+		printf(")");
+		return;
+
+
+	case FL_TERM_LET:
+		printf("let ");
+		flTermPrettyPrint(term->data.let.affect, env);
+		printf(" in ");
+		flTermPrettyPrint(term->data.let.following, env);
+		return;
+
+	default:
+		printf("<INVALID TERM>");
+		return;
+	}
+}
+
 

@@ -26,6 +26,12 @@ void eval(const char * const str, FLEnvironment * const env)
 
 		if (tree->type == FL_PARSE_TREE_LET && tree->data.let.following == NULL){
 
+			if (tree->data.let.recursive){
+				env->globalTerms[env->nbGlobalVar] = NULL;
+				env->globalVarNames[env->nbGlobalVar] = strdup(tree->data.let.variable);
+				env->nbGlobalVar++;
+			}
+
 			FLTerm * evaluatedTerm = flTermEvaluationFromParseTree(tree->data.let.affect, env);
 			flParseTreeFree(tree);
 
@@ -35,27 +41,34 @@ void eval(const char * const str, FLEnvironment * const env)
 			}
 
 			printf ("Global var %s : ", tree->data.let.variable);
-			flTermPrint(evaluatedTerm);
+			flTermPrettyPrint(evaluatedTerm, env);
 			printf ("\n\n");
 
-			env->globalTerms[env->nbGlobalVar] = evaluatedTerm;
-			env->globalVarNames[env->nbGlobalVar] = strdup(tree->data.let.variable);
-			env->nbGlobalVar++;
-
+			if (tree->data.let.recursive){
+				env->globalTerms[env->nbGlobalVar - 1] = evaluatedTerm;
+			} else {
+				env->globalTerms[env->nbGlobalVar] = evaluatedTerm;
+				env->globalVarNames[env->nbGlobalVar] = strdup(tree->data.let.variable);
+				env->nbGlobalVar++;
+			}
 
 		} else {
 
 			FLTerm * evaluatedTerm = flTermEvaluationFromParseTree(tree, env);
-			flParseTreeFree(tree);
 
 			if (evaluatedTerm == NULL){
 				fprintf(stderr, "ERROR\n");
 				return;
 			}
 
-			printf("Evaluated term : ");
-			flTermPrint(evaluatedTerm);
+			printf("Evaluated term for tree ");
+			flParseTreePrint(tree);
+			printf(" : ");
+			flTermPrettyPrint(evaluatedTerm, env);
 			printf("\n");
+
+			flParseTreeFree(tree);
+			flTermFree(evaluatedTerm);
 		}
 	}
 }

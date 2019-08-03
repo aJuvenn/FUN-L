@@ -212,41 +212,6 @@ void flTermPrint(const FLTerm * const term)
 
 
 
-FLTerm * flTermApply(FLTerm * term, FLTermManipulator f)
-{
-	FLTerm * output;
-	FLTerm * tmp;
-
-	switch (term->type){
-
-	case FL_TERM_VAR_ID:
-	case FL_TERM_GLOBAL_VAR_ID:
-		return f(term);
-
-	case FL_TERM_FUN:
-		tmp = flTermNewFun(f(term->data.funBody));
-		output = f(tmp);
-		flTermFree(tmp);
-		return output;
-
-	case FL_TERM_CALL:
-		tmp = flTermNewCall(f(term->data.call.arg), f(term->data.call.func));
-		output = f(tmp);
-		flTermFree(tmp);
-		return output;
-
-	case FL_TERM_LET:
-		tmp = flTermNewLet(f(term->data.let.affect), f(term->data.let.following));
-		output = f(tmp);
-		flTermFree(tmp);
-		return output;
-
-	default:
-		return NULL;
-	}
-}
-
-
 
 
 FLTerm * flTermCopy(const FLTerm * const term)

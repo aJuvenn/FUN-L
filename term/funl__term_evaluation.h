@@ -35,6 +35,10 @@ FLTermId flGlobalIdFromName(const char * const globalVarName, const FLEnvironmen
 
 
 
+void flTermPrettyPrint(const FLTerm * const term, const FLEnvironment * const env);
+
+
+
 FLTerm * flTermFromParseTree(const FLParseTree * const tree, FLEnvironment * const env);
 
 
