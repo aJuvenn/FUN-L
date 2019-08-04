@@ -31,13 +31,14 @@ FLParseTree * flParseTreeNewVar(char * name)
 }
 
 
-FLParseTree * flParseTreeNewCall(FLParseTree * func, size_t nbArguments, FLParseTree * args[])
+FLParseTree * flParseTreeNewCall(FLParseTree * func, size_t nbArguments, FLParseTree * args[], int isACallByName)
 {
 	FLParseTree * output = flParseTreeNew();
 
 	output->type = FL_PARSE_TREE_CALL;
 	output->data.call.function = func;
 	output->data.call.nbArguments = nbArguments;
+	output->data.call.isACallByName = isACallByName;
 
 	FL_SIMPLE_ALLOC(output->data.call.arguments, nbArguments);
 	memcpy(output->data.call.arguments, args, nbArguments * sizeof(FLParseTree *));

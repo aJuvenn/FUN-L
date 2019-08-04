@@ -11,7 +11,7 @@
 
 
 
-FLParseTree * flParseTreeLeftBracket(FLStreamCursor * const cursor)
+FLParseTree * flParseTreeLeftBracket(FLStreamCursor * const cursor, const FLTokenType expectedRightBracket)
 {
 	FLParseTree * output = flParseTreeRecursive(cursor);
 
@@ -42,13 +42,14 @@ FLParseTree * flParseTreeLeftBracket(FLStreamCursor * const cursor)
 	FlToken token;
 	flTokenNext(cursor, &token);
 
-	if (token.type != FL_TOKEN_RIGHT_BRACKET){
+	if (token.type != expectedRightBracket){
 		flTokenFree(&token);
 		goto INVALID;
 	}
 
 	if (nbArguments != 0){
-		return flParseTreeNewCall(output, nbArguments, arguments);
+		int isACallByName = (expectedRightBracket == FL_TOKEN_RIGHT_SQUARE_BRACKET);
+		return flParseTreeNewCall(output, nbArguments, arguments, isACallByName);
 	}
 
 	return output;
@@ -72,9 +73,17 @@ FLParseTree * flParseFunTree(FLStreamCursor * const cursor)
 	FlToken token;
 	size_t nbParameters = 0;
 	char * parameters[FL_PARSER_MAXIMUM_ARITY];
+
 	flTokenNext(cursor, &token);
 
-	if (token.type != FL_TOKEN_LEFT_BRACKET){
+	FLTokenType leftBracketType = token.type;
+	FLTokenType expectedRightBracketType;
+
+	if (leftBracketType == FL_TOKEN_LEFT_BRACKET){
+		expectedRightBracketType = FL_TOKEN_RIGHT_BRACKET;
+	} else if (leftBracketType == FL_TOKEN_LEFT_SQUARE_BRACKET){
+		expectedRightBracketType = FL_TOKEN_RIGHT_SQUARE_BRACKET;
+	} else {
 		goto INVALID;
 	}
 
@@ -93,7 +102,8 @@ FLParseTree * flParseFunTree(FLStreamCursor * const cursor)
 		parameters[nbParameters++] = token.data.variableName;
 	}
 
-	if (token.type != FL_TOKEN_RIGHT_BRACKET || nbParameters == 0){
+
+	if (token.type != expectedRightBracketType || nbParameters == 0){
 		goto INVALID;
 	}
 
@@ -207,7 +217,10 @@ FLParseTree * flParseTreeRecursive(FLStreamCursor * const cursor)
 		break;
 
 	case FL_TOKEN_LEFT_BRACKET:
-		return flParseTreeLeftBracket(cursor);
+		return flParseTreeLeftBracket(cursor, FL_TOKEN_RIGHT_BRACKET);
+
+	case FL_TOKEN_LEFT_SQUARE_BRACKET:
+		return flParseTreeLeftBracket(cursor, FL_TOKEN_RIGHT_SQUARE_BRACKET);
 
 	default:
 		return NULL;

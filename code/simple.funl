@@ -9,22 +9,21 @@ let identity
 	
 let if
 	fun (b t e)
-		(b t e);
+		[b t e];
 		
 let and
 	fun (b1 b2)
-		(if b1 b2 false);
+		[if b1 b2 false];
 	
 let or
 	fun (b1 b2)
-		(if b1 true b2);
+		[if b1 true b2];
 		
 let not
 	fun (b)
-		(if b false true);
+		[if b false true];
 	
-	
-	
+
 
 let cons
 	fun (x y f)
@@ -40,7 +39,7 @@ let snd
 		
 		
 		
-let []
+let </>
 	fun (x) true;
 	
 	
@@ -49,53 +48,51 @@ let isempty?
 		(l (fun (x y) false));
 	
 	
-
 let head fst;
 
 
 let tail 
 	fun (l)
-		(if (isempty? l)
-			[]
+		[if (isempty? l)
+			</>
 			(snd l)
-		);
-	
-	
-	
+		];
+		
+		
 let rec foldl
 	fun (f l b)
-		(if (isempty? l)
+		[if (isempty? l)
 			b
 			(f (head l) (foldl f (tail l) b))
-		);
+		];
 		
 		
 
 let rec foldr
 	fun (f l b)
-		(if (isempty? l)
+		[if (isempty? l)
 			b
 			(foldr f (tail l) (f (head l) b))
-		);
+		];
 		
 			
 let rec map
 	fun (f l)
-		(if (isempty? l)
-			[]
+		[if (isempty? l)
+			</>
 			(cons (f (head l)) 
 				  (map f (tail l))
 			)
-		);
+		];
 			
 			
 let rec apply
 	fun (f l)
-		(if (isempty? l)
+		[if (isempty? l)
 			(apply (f (head l)) 
 				   (tail l)
 			)
-		);
+		];
 			
 			
 let concat
@@ -105,24 +102,24 @@ let concat
 		
 let reverse
 	fun (l)
-		(foldr cons l []);
+		(foldr cons l </>);
 		
 		
 let rec append
 	fun (x l)
-		(if (isempty? l)
-			(cons x [])
+		[if (isempty? l)
+			(cons x </>)
 			(cons (head l) (append x (tail l)))
-		);
+		];
 
-		
+
 		
 
 let succ 
 	fun (n)
 		(cons identity n);
 
-let 0 [];
+let 0 </>;
 let 1 (succ 0);
 let 2 (succ 1);
 let 3 (succ 2);
@@ -230,37 +227,37 @@ let pred tail;
 
 let rec iterate
 	fun (nb-times f x)
-		(if (iszero? nb-times)
+		[if (iszero? nb-times)
 			x
 			(f (iterate (pred nb-times) f x))
-		);
+		];
 		
 	
 	
 let +
 	fun (a b)
-		(iterate b succ a);
+		[iterate b succ a];
 
 let -
 	fun (a b)
-		(iterate b pred a);
+		[iterate b pred a];
 
 let *
 	fun (a b)
-		(iterate a (+ b) 0);
+		[iterate a (+ b) 0];
 	
 let ^
 	fun (a b)
-		(iterate b (* a) 1);
+		[iterate b (* a) 1];
 
 
 
 
 let =
 	fun (a b)
-		(and (iszero? (- b a))
+		[and (iszero? (- b a))
 			 (iszero? (- a b))
-		);
+		];
 		
 let >
 	fun (a b)
@@ -273,9 +270,9 @@ let <
 		
 let >=
 	fun (a b)
-		(or (> a b)
+		[or (> a b)
 			(= a b)
-		);
+		];
 		
 let <=
 	fun (a b)
@@ -289,10 +286,10 @@ let <=
 
 let rec /
 	fun (a b)
-		(if (< a b)
+		[if (< a b)
 			0
 			(succ (/ (- a b) b))
-		);
+		];
 		
 		
 let %
@@ -306,40 +303,32 @@ let %
 		
 let rec pgcd
 	fun (a b)
-		(if (iszero? b)
+		[if (iszero? b)
 			a
-			
-			let mod (% a b) in
-			(pgcd b mod)
-		);	
+			(pgcd b (% a b))
+		];	
 	
 	
 let rec insert
 	fun (less-or-equal? x l)
-		(if (isempty? l)
-			(cons x [])
+		[if (isempty? l)
+			(cons x </>)
 			let y 
 				(head l)
 			in
-			(if (less-or-equal? x y)
+			[if (less-or-equal? x y)
 				(cons x l)
-				
-				let t (tail l) in
-				let rec-call (insert less-or-equal? x t)
-				in (cons y rec-call)
-			)
-		);	
+				(cons y (insert less-or-equal? x (tail l)))
+			]
+		];	
 	
 	
 let rec sort
 	fun (less-or-equal? l)
-		(if (isempty? l)
-			[]
-			let h (head l) in
-			let t (tail l) in
-			let sorted-tail (sort less-or-equal? t) 
-			in (insert less-or-equal? h sorted-tail)
-		);
+		[if (isempty? l)
+			</>
+			(insert less-or-equal? (head l) (sort less-or-equal? (tail l)))
+		];
 			
 			
 	
@@ -349,14 +338,24 @@ let rec sort
 (= (+ 1 1) 0)		
 (= (+ 1 1) 3)
 (= (* 2 2) (+ 3 1))
+(* 2 2)
+(+ 3 1)
 
 
-(sort <= (cons 4 (cons 2 (cons 3 []))))		
+(pgcd 8 12)
+
+(sort <= (cons 4 (cons 2 (cons 3 </>))))		
 
 
+
+let quote 
+	fun (x) 
+		fun (f) 
+			[f x];
+	 
 	
-
-
+[quote (pgcd 46 12)]
+	
 
 
 

@@ -51,7 +51,7 @@ FLTerm * flTermFromParseTreeCall(const FLParseTree * const call, FLEnvironment *
 			return NULL;
 		}
 
-		output = flTermNewCall(output, arg);
+		output = flTermNewCall(output, arg, call->data.call.isACallByName);
 	}
 
 	return output;

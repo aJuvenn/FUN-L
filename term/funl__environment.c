@@ -107,11 +107,11 @@ void flTermPrettyPrint(const FLTerm * const term, const FLEnvironment * const en
 		return;
 
 	case FL_TERM_CALL:
-		printf("(");
+		printf(term->data.call.isACallByName ? "[" : "(");
 		flTermPrettyPrint(term->data.call.func, env);
-		printf(") (");
+		printf(" ");
 		flTermPrettyPrint(term->data.call.arg, env);
-		printf(")");
+		printf(term->data.call.isACallByName ? "]" : ")");
 		return;
 
 

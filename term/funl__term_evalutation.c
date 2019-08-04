@@ -30,7 +30,8 @@ FLTerm * flTermIncrementOutsideVarIds(const FLTerm * const term, const FLTermId 
 
 	case FL_TERM_CALL:
 		return flTermNewCall(flTermIncrementOutsideVarIds(term->data.call.func, minToIncrement, incrementOf),
-				flTermIncrementOutsideVarIds(term->data.call.arg, minToIncrement, incrementOf));
+				flTermIncrementOutsideVarIds(term->data.call.arg, minToIncrement, incrementOf),
+				term->data.call.isACallByName);
 
 
 	case FL_TERM_FUN:
@@ -78,7 +79,8 @@ FLTerm * flTermReplaceIdByArg(const FLTerm * const body, const FLTermId idToRepl
 
 	case FL_TERM_CALL:
 		return flTermNewCall(flTermReplaceIdByArg(body->data.call.func, idToReplace, arg),
-				flTermReplaceIdByArg(body->data.call.arg, idToReplace, arg));
+				flTermReplaceIdByArg(body->data.call.arg, idToReplace, arg),
+				body->data.call.isACallByName);
 
 
 	case FL_TERM_FUN:
@@ -103,6 +105,8 @@ FLTerm * flTermReplaceIdByArg(const FLTerm * const body, const FLTermId idToRepl
 FLTerm * flTermEvaluationCall(const FLTerm * const call, FLEnvironment * const env)
 {
 	FLTerm * output;
+	FLTerm * argToUse;
+	const int isACallByName = call->data.call.isACallByName;
 	FLTerm * evaluatedFunc = flTermEvaluation(call->data.call.func, env);
 
 
@@ -114,12 +118,30 @@ FLTerm * flTermEvaluationCall(const FLTerm * const call, FLEnvironment * const e
 
 	case FL_TERM_CALL:
 	case FL_TERM_VAR_ID:
-		return flTermNewCall(evaluatedFunc, flTermCopy(call->data.call.arg));
+
+		if (isACallByName){
+			argToUse = flTermCopy(call->data.call.arg);
+		} else {
+			argToUse = flTermEvaluation(call->data.call.arg, env);
+		}
+
+		return flTermNewCall(evaluatedFunc, argToUse, call->data.call.isACallByName);
+
 
 	case FL_TERM_FUN:
 	{
-		FLTerm * replaceArgs = flTermReplaceIdByArg(evaluatedFunc->data.funBody, 0, call->data.call.arg);
+		if (isACallByName){
+			argToUse = call->data.call.arg;
+		} else {
+			argToUse = flTermEvaluation(call->data.call.arg, env);
+		}
+
+		FLTerm * replaceArgs = flTermReplaceIdByArg(evaluatedFunc->data.funBody, 0, argToUse);
 		flTermFree(evaluatedFunc);
+
+		if (!isACallByName){
+			flTermFree(argToUse);
+		}
 
 		if (replaceArgs == NULL){
 			return NULL;
@@ -145,7 +167,13 @@ FLTerm * flTermEvaluationCall(const FLTerm * const call, FLEnvironment * const e
 			return NULL;
 		}
 
-		FLTerm * globalTermInCall = flTermNewCall(globalTerm, flTermCopy(call->data.call.arg));
+		if (isACallByName){
+			argToUse = flTermCopy(call->data.call.arg);
+		} else {
+			argToUse = flTermEvaluation(call->data.call.arg, env);
+		}
+
+		FLTerm * globalTermInCall = flTermNewCall(globalTerm, argToUse, call->data.call.isACallByName);
 		output = flTermEvaluation(globalTermInCall, env);
 		flTermFree(globalTermInCall);
 
@@ -161,6 +189,9 @@ FLTerm * flTermEvaluationCall(const FLTerm * const call, FLEnvironment * const e
 		return NULL;
 	}
 }
+
+
+
 
 
 

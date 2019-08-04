@@ -31,6 +31,7 @@ typedef struct {
 
 	FLTerm * func;
 	FLTerm * arg;
+	int isACallByName;
 
 } FLTermCallData;
 
@@ -70,13 +71,11 @@ struct FLTerm {
 FLTerm * flTermNewVarId(FLTermId id);
 FLTerm * flTermNewGlobalVarId(FLTermId id);
 FLTerm * flTermNewFun(FLTerm * body);
-FLTerm * flTermNewCall(FLTerm * fun, FLTerm * arg);
+FLTerm * flTermNewCall(FLTerm * fun, FLTerm * arg, int isACallByName);
 FLTerm * flTermNewLet(FLTerm * affect, FLTerm * following);
 
 FLTerm * flTermCopy(const FLTerm * const term);
 
-
-FLTerm * flTermParse(const char * const str);
 
 
 void flTermPrint(const FLTerm * const term);

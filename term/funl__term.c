@@ -51,13 +51,14 @@ FLTerm * flTermNewGlobalVarId(FLTermId id)
 
 
 
-FLTerm * flTermNewCall(FLTerm * fun, FLTerm * arg)
+FLTerm * flTermNewCall(FLTerm * fun, FLTerm * arg, int isACallByName)
 {
 	FLTerm * output = flTermNew();
 
 	output->type = FL_TERM_CALL;
 	output->data.call.func = fun;
 	output->data.call.arg = arg;
+	output->data.call.isACallByName = isACallByName;
 
 	return output;
 }
@@ -75,93 +76,6 @@ FLTerm * flTermNewLet(FLTerm * affect, FLTerm * following)
 }
 
 
-
-FLTerm * flTermParseRec(FLStreamCursor * const cursor)
-{
-	if (cursor == NULL || *cursor == NULL || **cursor == 0){
-		return NULL;
-	}
-
-	char c = *((*cursor)++);
-
-	switch (c){
-
-	case 'L':
-
-		if (*((*cursor)++) != '.'){
-			return NULL;
-		}
-
-		return flTermNewFun(flTermParseRec(cursor));
-
-	case '(':
-	{
-
-		FLTerm * app = flTermParseRec(cursor);
-		char c1, c2, c3;
-
-		if (app == NULL){
-			return NULL;
-		}
-
-		c1 = *((*cursor)++);
-		c2 = *((*cursor)++);
-		c3 = *((*cursor)++);
-
-		if (c1 != ')' || c2 != ' ' || c3 != '('){
-			return NULL;
-		}
-
-		FLTerm * arg = flTermParseRec(cursor);
-
-		if (arg == NULL){
-			return NULL;
-		}
-
-		if (*((*cursor)++) != ')'){
-			return NULL;
-		}
-
-		return flTermNewCall(app, arg);
-	}
-
-	default:
-	{
-
-		FLTermId s = 0;
-
-		if (!isdigit(c)){
-			return NULL;
-		}
-
-		do {
-
-			s *= 10;
-			s += (c - '0');
-			c = *((*cursor)++);
-
-		} while (isdigit(c));
-
-		if (c != ')' && c != 0){
-			return NULL;
-		}
-
-		(*cursor)--;
-
-		return flTermNewVarId(s);
-	}
-	}
-
-
-}
-
-
-
-FLTerm * flTermParse(const char * const str)
-{
-	FLStreamCursor cursor = str;
-	return flTermParseRec(&cursor);
-}
 
 
 
@@ -188,11 +102,11 @@ void flTermPrint(const FLTerm * const term)
 		return;
 
 	case FL_TERM_CALL:
-		printf("(");
+		printf(term->data.call.isACallByName ? "[" : "(");
 		flTermPrint(term->data.call.func);
-		printf(") (");
+		printf(" ");
 		flTermPrint(term->data.call.arg);
-		printf(")");
+		printf(term->data.call.isACallByName ? "]" : ")");
 		return;
 
 
@@ -232,7 +146,7 @@ FLTerm * flTermCopy(const FLTerm * const term)
 		return flTermNewFun(flTermCopy(term->data.funBody));
 
 	case FL_TERM_CALL:
-		return flTermNewCall(flTermCopy(term->data.call.func), flTermCopy(term->data.call.arg));
+		return flTermNewCall(flTermCopy(term->data.call.func), flTermCopy(term->data.call.arg), term->data.call.isACallByName);
 
 	case FL_TERM_LET:
 		return flTermNewLet(flTermCopy(term->data.let.affect), flTermCopy(term->data.let.following));

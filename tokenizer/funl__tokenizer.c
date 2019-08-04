@@ -16,7 +16,7 @@
  */
 int flIsValidCharForVariableName(char c)
 {
-	return isgraph(c) && c != '(' && c != ')' && c != ';';
+	return isgraph(c) && c != '(' && c != ')' && c != ';' && c != '[' && c != ']';
 }
 
 
@@ -109,6 +109,16 @@ void flTokenNext(FLStreamCursor * const cursor, FlToken * const out_token)
 		(*cursor)++;
 		return;
 
+	case '[':
+		out_token->type = FL_TOKEN_LEFT_SQUARE_BRACKET;
+		(*cursor)++;
+		return;
+
+	case ']':
+		out_token->type = FL_TOKEN_RIGHT_SQUARE_BRACKET;
+		(*cursor)++;
+		return;
+
 	case ';':
 		out_token->type = FL_TOKEN_SEMICOLON;
 		(*cursor)++;
@@ -143,6 +153,14 @@ void flTokenPrint(const FlToken * const tk)
 
 	case FL_TOKEN_RIGHT_BRACKET:
 		printf("RIGHT_BRACKET");
+		return;
+
+	case FL_TOKEN_LEFT_SQUARE_BRACKET:
+		printf("LEFT_SQUARE_BRACKET");
+		return;
+
+	case FL_TOKEN_RIGHT_SQUARE_BRACKET:
+		printf("RIGHT_SQUARE_BRACKET");
 		return;
 
 	case FL_TOKEN_END_OF_STREAM:

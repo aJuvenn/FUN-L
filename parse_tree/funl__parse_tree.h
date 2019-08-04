@@ -32,6 +32,8 @@ typedef struct {
 	size_t nbArguments;
 	FLParseTree ** arguments;
 
+	int isACallByName;
+
 } FLParseTreeCallData;
 
 
@@ -102,7 +104,7 @@ void flParseTreeFree(FLParseTree * tree);
 
 
 FLParseTree * flParseTreeNewVar(char * name);
-FLParseTree * flParseTreeNewCall(FLParseTree * func, size_t nbArguments, FLParseTree ** args);
+FLParseTree * flParseTreeNewCall(FLParseTree * func, size_t nbArguments, FLParseTree ** args, int isACallByName);
 FLParseTree * flParseTreeNewFun(size_t nbParameters, char ** params, FLParseTree * body);
 FLParseTree * flParseTreeNewLet(char * variable, FLParseTree * affectExpr, FLParseTree * followingExpr, int recursive);
 
