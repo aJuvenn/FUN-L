@@ -11,6 +11,7 @@
 
 #include "../funl__include.h"
 
+
 typedef enum {
 
 	FL_TOKEN_INVALID = 0,
@@ -23,7 +24,7 @@ typedef enum {
 
 	FL_TOKEN_END_OF_STREAM
 
-} FlTokenType;
+} FLTokenType;
 
 
 
@@ -39,11 +40,16 @@ typedef enum {
 } FlTokenKeyWordData;
 
 
-
+/*
+ * FlToken type represents a token extracted from a text
+ * file reading.
+ */
 typedef struct {
 
-	FlTokenType type;
+	/* Type field specifying which kind of token it is */
+	FLTokenType type;
 
+	/* Data contained in the token, depending on its type */
 	union {
 		char * variableName;
 		FlTokenKeyWordData keyword;
@@ -52,13 +58,31 @@ typedef struct {
 } FlToken;
 
 
+
+/*
+ * A FLStreamCursor is a char pointer used to parse a
+ * text file into tokens.
+ */
 typedef const char * FLStreamCursor;
 
 
+/*
+ * Reads and increments the stream cursor to store into out_token the
+ * next token in file. In case of failure, out_token receives
+ * FL_TOKEN_INVALID as type.
+ */
 void flTokenNext(FLStreamCursor * const cursor, FlToken * const out_token);
 
+/*
+ * Prints on standard output the token
+ */
 void flTokenPrint(const FlToken * const tk);
 
+
+/*
+ * Frees the string possibly contained into the token.
+ * The pointer tk was not dynamically allocated.
+ */
 void flTokenFree(FlToken * tk);
 
 

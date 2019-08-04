@@ -10,6 +10,7 @@
 
 #include "../funl__include.h"
 
+
 #define FL_SIMPLE_ALLOC(ptr, nb_elements)\
 	if ((nb_elements) == 0){\
 		fprintf(stderr, "FL_SIMPLE_ALLOC (in %s) : received 0 as number of elements\n", __FUNCTION__);\

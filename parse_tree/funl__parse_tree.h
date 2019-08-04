@@ -38,7 +38,7 @@ typedef struct {
 typedef struct {
 
 	size_t nbParameters;
-	const char ** parameters;
+	char ** parameters;
 
 	FLParseTree * body;
 
@@ -48,7 +48,7 @@ typedef struct {
 
 typedef struct {
 
-	const char * variable;
+	char * variable;
 	FLParseTree * affect;
 
 	FLParseTree * following;
@@ -68,7 +68,7 @@ struct FLParseTree {
 
 	union {
 
-		const char * var;
+		char * var;
 		FLParseTreeCallData call;
 		FLParseTreeFunData fun;
 		FLParseTreeLetData let;
@@ -86,6 +86,7 @@ struct FLParseTree {
 
 FLParseTree * flParseTree(FLStreamCursor cursor);
 
+
 FLParseTree * flParseTreeRecursive(FLStreamCursor * const cursor);
 
 
@@ -98,6 +99,12 @@ void flParseTreeFree(FLParseTree * tree);
 
 
 
+
+
+FLParseTree * flParseTreeNewVar(char * name);
+FLParseTree * flParseTreeNewCall(FLParseTree * func, size_t nbArguments, FLParseTree ** args);
+FLParseTree * flParseTreeNewFun(size_t nbParameters, char ** params, FLParseTree * body);
+FLParseTree * flParseTreeNewLet(char * variable, FLParseTree * affectExpr, FLParseTree * followingExpr, int recursive);
 
 
 

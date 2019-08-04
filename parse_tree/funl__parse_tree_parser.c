@@ -11,15 +11,6 @@
 
 
 
-
-FLParseTree * flParseTreeNewVar(const char * name);
-FLParseTree * flParseTreeNewCall(FLParseTree * func, size_t nbArguments, FLParseTree ** args);
-FLParseTree * flParseTreeNewFun(size_t nbParameters, char ** params, FLParseTree * body);
-FLParseTree * flParseTreeNewLet(const char * variable, FLParseTree * affectExpr, FLParseTree * followingExpr, int recursive);
-
-FLParseTree * flParseTreeRecursive(FLStreamCursor * const cursor);
-
-
 FLParseTree * flParseTreeLeftBracket(FLStreamCursor * const cursor)
 {
 	FLParseTree * output = flParseTreeRecursive(cursor);

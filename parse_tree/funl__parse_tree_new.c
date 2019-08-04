@@ -8,7 +8,9 @@
 #include "../funl__include.h"
 
 
-
+/*
+ * Allocates and returns a new empty tree.
+ */
 FLParseTree * flParseTreeNew()
 {
 	FLParseTree * output;
@@ -18,7 +20,7 @@ FLParseTree * flParseTreeNew()
 }
 
 
-FLParseTree * flParseTreeNewVar(const char * name)
+FLParseTree * flParseTreeNewVar(char * name)
 {
 	FLParseTree * output = flParseTreeNew();
 
@@ -29,7 +31,7 @@ FLParseTree * flParseTreeNewVar(const char * name)
 }
 
 
-FLParseTree * flParseTreeNewCall(FLParseTree * func, size_t nbArguments, FLParseTree ** args)
+FLParseTree * flParseTreeNewCall(FLParseTree * func, size_t nbArguments, FLParseTree * args[])
 {
 	FLParseTree * output = flParseTreeNew();
 
@@ -61,7 +63,7 @@ FLParseTree * flParseTreeNewFun(size_t nbParameters, char ** params, FLParseTree
 
 
 
-FLParseTree * flParseTreeNewLet(const char * variable, FLParseTree * affectExpr, FLParseTree * followingExpr, int recursive)
+FLParseTree * flParseTreeNewLet(char * variable, FLParseTree * affectExpr, FLParseTree * followingExpr, int recursive)
 {
 	FLParseTree * output = flParseTreeNew();
 
@@ -77,10 +79,59 @@ FLParseTree * flParseTreeNewLet(const char * variable, FLParseTree * affectExpr,
 
 void flParseTreeFree(FLParseTree * tree)
 {
-	/*
-	 * TODO
-	 */
-	return;
+
+	switch (tree->type){
+
+
+	case FL_PARSE_TREE_VAR:
+		free(tree->data.var);
+		break;
+
+
+	case FL_PARSE_TREE_CALL:
+
+		flParseTreeFree(tree->data.call.function);
+
+		for (size_t i = 0 ; i < tree->data.call.nbArguments ; i++){
+			flParseTreeFree(tree->data.call.arguments[i]);
+		}
+
+		free(tree->data.call.arguments);
+
+		break;
+
+
+	case FL_PARSE_TREE_FUN:
+
+		flParseTreeFree(tree->data.fun.body);
+
+		for (size_t i = 0 ; i < tree->data.fun.nbParameters ; i++){
+			free(tree->data.fun.parameters[i]);
+		}
+
+		free(tree->data.fun.parameters);
+
+		break;
+
+
+	case FL_PARSE_TREE_LET:
+
+		flParseTreeFree(tree->data.let.affect);
+
+		if (tree->data.let.following != NULL){
+			flParseTreeFree(tree->data.let.following);
+		}
+
+		free(tree->data.let.variable);
+
+		break;
+
+
+	default:
+		break;
+	}
+
+	free(tree);
 }
 
 

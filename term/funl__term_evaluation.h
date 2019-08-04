@@ -15,7 +15,7 @@ typedef struct {
 	size_t varNameStackSize;
 
 
-	const char ** globalVarNames;
+	char ** globalVarNames;
 	FLTerm ** globalTerms;
 	size_t nbGlobalVar;
 

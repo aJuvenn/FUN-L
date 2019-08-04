@@ -9,13 +9,21 @@
 
 
 
-
+/*
+ * Returns 1 if the char can be used in a variable name
+ * (which mean it is printable and not a semicolon or bracket)
+ * Otherwise it returns 0.
+ */
 int flIsValidCharForVariableName(char c)
 {
 	return isgraph(c) && c != '(' && c != ')' && c != ';';
 }
 
 
+/*
+ * List of langage key words. Their order must be the same as
+ * in FlTokenKeyWordData corresponding enum.
+ */
 static const char * flKeyWords[FL_KEY_WORD_MAX_VALUE] = {
 		"fun",
 		"let",
@@ -24,6 +32,12 @@ static const char * flKeyWords[FL_KEY_WORD_MAX_VALUE] = {
 };
 
 
+/*
+ * If the cursor points to the beginning of a word, it is increased and read until
+ * the end of the word. The corresponding token is written in out_token (it can be
+ * either a key word or a variable name). In case of failure, out_token receives
+ * FL_TOKEN_INVALID as type.
+ */
 void flTokenNextFromWord(FLStreamCursor * const cursor, FlToken * const out_token)
 {
 	unsigned wordSize = 0;
@@ -63,7 +77,11 @@ void flTokenNextFromWord(FLStreamCursor * const cursor, FlToken * const out_toke
 }
 
 
-
+/*
+ * Reads and increments the stream cursor to store into out_token the
+ * next token in file. In case of failure, out_token receives
+ * FL_TOKEN_INVALID as type.
+ */
 void flTokenNext(FLStreamCursor * const cursor, FlToken * const out_token)
 {
 	if (cursor == NULL || *cursor == NULL || out_token == NULL){
@@ -104,7 +122,9 @@ void flTokenNext(FLStreamCursor * const cursor, FlToken * const out_token)
 }
 
 
-
+/*
+ * Prints on standard output the token
+ */
 void flTokenPrint(const FlToken * const tk)
 {
 	switch (tk->type){
@@ -144,6 +164,10 @@ void flTokenPrint(const FlToken * const tk)
 }
 
 
+/*
+ * Frees the string possibly contained into the token.
+ * The pointer tk was not dynamically allocated.
+ */
 void flTokenFree(FlToken * tk)
 {
 	if (tk->type == FL_TOKEN_VARIABLE){
