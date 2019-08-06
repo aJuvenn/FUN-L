@@ -19,7 +19,7 @@ FLTerm * flTermFromParseTreeVar(const FLParseTree * const var, FLEnvironment * c
 	FLTermId varId = flTermIdFromVarName(var->data.var, env);
 
 	if (varId != (FLTermId) -1){
-		return flTermNewVarId(varId);
+		return flTermNewVarId(varId, env);
 	}
 
 	varId = flGlobalIdFromName(var->data.var, env);
@@ -29,7 +29,7 @@ FLTerm * flTermFromParseTreeVar(const FLParseTree * const var, FLEnvironment * c
 		return NULL;
 	}
 
-	return flTermNewGlobalVarId(varId);
+	return flTermNewGlobalVarId(varId, env);
 }
 
 
@@ -47,11 +47,11 @@ FLTerm * flTermFromParseTreeCall(const FLParseTree * const call, FLEnvironment *
 		FLTerm * arg = flTermFromParseTree(call->data.call.arguments[i], env);
 
 		if (arg == NULL){
-			flTermFree(output);
+			flTermFree(output, env);
 			return NULL;
 		}
 
-		output = flTermNewCall(output, arg, call->data.call.isACallByName);
+		output = flTermNewCall(output, arg, call->data.call.isACallByName, env);
 	}
 
 	return output;
@@ -78,7 +78,7 @@ FLTerm * flTermFromParseTreeFun(const FLParseTree * const fun, FLEnvironment * c
 	FLTerm * output = funBody;
 
 	for (size_t i = 0 ; i < nbParameters ; i++){
-		output = flTermNewFun(output);
+		output = flTermNewFun(output, env);
 	}
 
 	return output;
@@ -106,12 +106,12 @@ FLTerm * flTermFromParseTreeLet(const FLParseTree * const let, FLEnvironment * c
 	env->varNameStackSize--;
 
 	if (following == NULL){
-		flTermFree(affect);
+		flTermFree(affect, env);
 		fprintf(stderr, "flTermFromParseTreeLet : following flTermFromParseTree failed\n");
 		return NULL;
 	}
 
-	return flTermNewLet(affect, following);
+	return flTermNewLet(affect, following, env);
 }
 
 

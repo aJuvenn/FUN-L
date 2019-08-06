@@ -9,17 +9,20 @@
 
 
 
-FLTerm * flTermNew()
+FLTerm * flTermNew(FLEnvironment * const env)
 {
-	FLTerm * output;
-	FL_SIMPLE_ALLOC(output, 1);
-	return output;
+	if (env->nbAvailableTerms == 0){
+		fprintf(stderr, "Out of memory\n");
+		exit(EXIT_FAILURE);
+	}
+
+	return env->availableTerms[--(env->nbAvailableTerms)];
 }
 
 
-FLTerm * flTermNewFun(FLTerm * funBody)
+FLTerm * flTermNewFun(FLTerm * funBody, FLEnvironment * const env)
 {
-	FLTerm * output = flTermNew();
+	FLTerm * output = flTermNew(env);
 
 	output->type = FL_TERM_FUN;
 	output->data.funBody = funBody;
@@ -28,9 +31,9 @@ FLTerm * flTermNewFun(FLTerm * funBody)
 }
 
 
-FLTerm * flTermNewVarId(FLTermId id)
+FLTerm * flTermNewVarId(FLTermId id, FLEnvironment * const env)
 {
-	FLTerm * output = flTermNew();
+	FLTerm * output = flTermNew(env);
 
 	output->type = FL_TERM_VAR_ID;
 	output->data.varId = id;
@@ -39,9 +42,9 @@ FLTerm * flTermNewVarId(FLTermId id)
 }
 
 
-FLTerm * flTermNewGlobalVarId(FLTermId id)
+FLTerm * flTermNewGlobalVarId(FLTermId id, FLEnvironment * const env)
 {
-	FLTerm * output = flTermNew();
+	FLTerm * output = flTermNew(env);
 
 	output->type = FL_TERM_GLOBAL_VAR_ID;
 	output->data.varId = id;
@@ -51,9 +54,9 @@ FLTerm * flTermNewGlobalVarId(FLTermId id)
 
 
 
-FLTerm * flTermNewCall(FLTerm * fun, FLTerm * arg, int isACallByName)
+FLTerm * flTermNewCall(FLTerm * fun, FLTerm * arg, int isACallByName, FLEnvironment * const env)
 {
-	FLTerm * output = flTermNew();
+	FLTerm * output = flTermNew(env);
 
 	output->type = FL_TERM_CALL;
 	output->data.call.func = fun;
@@ -64,9 +67,9 @@ FLTerm * flTermNewCall(FLTerm * fun, FLTerm * arg, int isACallByName)
 }
 
 
-FLTerm * flTermNewLet(FLTerm * affect, FLTerm * following)
+FLTerm * flTermNewLet(FLTerm * affect, FLTerm * following, FLEnvironment * const env)
 {
-	FLTerm * output = flTermNew();
+	FLTerm * output = flTermNew(env);
 
 	output->type = FL_TERM_LET;
 	output->data.let.affect = affect;
@@ -128,7 +131,7 @@ void flTermPrint(const FLTerm * const term)
 
 
 
-FLTerm * flTermCopy(const FLTerm * const term)
+FLTerm * flTermCopy(const FLTerm * const term, FLEnvironment * const env)
 {
 	if (term == NULL){
 		return NULL;
@@ -137,19 +140,24 @@ FLTerm * flTermCopy(const FLTerm * const term)
 	switch (term->type){
 
 	case FL_TERM_VAR_ID:
-		return flTermNewVarId(term->data.varId);
+		return flTermNewVarId(term->data.varId, env);
 
 	case FL_TERM_GLOBAL_VAR_ID:
-		return flTermNewGlobalVarId(term->data.varId);
+		return flTermNewGlobalVarId(term->data.varId, env);
 
 	case FL_TERM_FUN:
-		return flTermNewFun(flTermCopy(term->data.funBody));
+		return flTermNewFun(flTermCopy(term->data.funBody, env), env);
 
 	case FL_TERM_CALL:
-		return flTermNewCall(flTermCopy(term->data.call.func), flTermCopy(term->data.call.arg), term->data.call.isACallByName);
+		return flTermNewCall(flTermCopy(term->data.call.func, env),
+							 flTermCopy(term->data.call.arg, env),
+							 term->data.call.isACallByName,
+							 env);
 
 	case FL_TERM_LET:
-		return flTermNewLet(flTermCopy(term->data.let.affect), flTermCopy(term->data.let.following));
+		return flTermNewLet(flTermCopy(term->data.let.affect, env),
+							flTermCopy(term->data.let.following, env),
+							env);
 
 	default:
 		return NULL;
@@ -159,7 +167,7 @@ FLTerm * flTermCopy(const FLTerm * const term)
 
 
 
-void flTermFree(FLTerm * term)
+void flTermFree(FLTerm * term, FLEnvironment * const env)
 {
 	if (term == NULL){
 		return;
@@ -168,17 +176,17 @@ void flTermFree(FLTerm * term)
 	switch (term->type){
 
 	case FL_TERM_FUN:
-		flTermFree(term->data.funBody);
+		flTermFree(term->data.funBody, env);
 		break;
 
 	case FL_TERM_CALL:
-		flTermFree(term->data.call.func);
-		flTermFree(term->data.call.arg);
+		flTermFree(term->data.call.func, env);
+		flTermFree(term->data.call.arg, env);
 		break;
 
 	case FL_TERM_LET:
-		flTermFree(term->data.let.affect);
-		flTermFree(term->data.let.following);
+		flTermFree(term->data.let.affect, env);
+		flTermFree(term->data.let.following, env);
 		break;
 
 	default:
@@ -186,7 +194,7 @@ void flTermFree(FLTerm * term)
 
 	}
 
-	free(term);
+	env->availableTerms[env->nbAvailableTerms++] = term;
 }
 
 

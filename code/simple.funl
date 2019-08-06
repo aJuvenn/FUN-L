@@ -344,6 +344,8 @@ let rec sort
 
 (pgcd 8 12)
 
+
+
 (sort <= (cons 4 (cons 2 (cons 3 </>))))		
 
 

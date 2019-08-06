@@ -70,7 +70,7 @@ void eval(const char * const str, FLEnvironment * const env)
 			printf("\n\n");
 
 			flParseTreeFree(tree);
-			flTermFree(evaluatedTerm);
+			flTermFree(evaluatedTerm, env);
 		}
 	}
 }
@@ -109,7 +109,7 @@ int main(int argc, char * argv[])
 
 	printf("%s", data);
 
-	FLEnvironment * env2 = flEnvironmentNew(100000);
+	FLEnvironment * env2 = flEnvironmentNew(1000, 10000, 1e6);
 	eval(data, env2);
 
 	flEnvironmentFree(env2);

@@ -9,6 +9,60 @@
 
 
 
+
+struct FLTerm;
+typedef struct FLTerm FLTerm;
+
+
+typedef enum {
+
+	FL_TERM_CALL,
+	FL_TERM_FUN,
+	FL_TERM_VAR_ID,
+	FL_TERM_GLOBAL_VAR_ID,
+	FL_TERM_LET
+
+} FLTermType;
+
+
+typedef struct {
+
+	FLTerm * func;
+	FLTerm * arg;
+	int isACallByName;
+
+} FLTermCallData;
+
+
+typedef struct {
+
+	FLTerm * affect;
+	FLTerm * following;
+
+} FLTermLetData;
+
+
+
+typedef uint32_t FLTermId;
+
+
+struct FLTerm {
+
+	FLTermType type;
+
+	union {
+
+		FLTermCallData call;
+		FLTermLetData let;
+		FLTerm * funBody;
+		FLTermId varId;
+
+	} data;
+};
+
+
+
+
 typedef struct {
 
 	const char ** varNameStack;
@@ -20,14 +74,48 @@ typedef struct {
 	size_t nbGlobalVar;
 
 
+	FLTerm * allocatedTermPool;
+	FLTerm ** availableTerms;
+	size_t nbAvailableTerms;
+
 } FLEnvironment;
 
 
-FLEnvironment * flEnvironmentNew(const size_t maximumSize);
+
+
+FLTerm * flTermNewVarId(FLTermId id, FLEnvironment * const env);
+FLTerm * flTermNewGlobalVarId(FLTermId id, FLEnvironment * const env);
+FLTerm * flTermNewFun(FLTerm * body, FLEnvironment * const env);
+FLTerm * flTermNewCall(FLTerm * fun, FLTerm * arg, int isACallByName, FLEnvironment * const env);
+FLTerm * flTermNewLet(FLTerm * affect, FLTerm * following, FLEnvironment * const env);
+
+FLTerm * flTermCopy(const FLTerm * const term, FLEnvironment * const env);
+
+
+
+void flTermPrint(const FLTerm * const term);
+void flTermFree(FLTerm * term, FLEnvironment * const env);
+
+
+#define FL_TERM_DEBUG_PRINT(x)\
+	do {\
+		printf("%s %s : ", __FUNCTION__, #x);\
+		flTermPrint(x);\
+		printf("\n");\
+	} while (0)
+
+
+
+
+FLEnvironment * flEnvironmentNew(const size_t maximumNbGlobalVar,
+								 const size_t maximumVarNameStackSize,
+								 const size_t allocatedTermPoolSize);
+
+
 void flEnvironmentFree(FLEnvironment * env);
 
 
-FLTerm * flGetTermFromGlobalId(const FLTermId id, const FLEnvironment * const env);
+FLTerm * flGetTermFromGlobalId(const FLTermId id, FLEnvironment * const env);
 
 
 FLTermId flTermIdFromVarName(const char * const varName, const FLEnvironment * const env);

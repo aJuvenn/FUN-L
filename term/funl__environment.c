@@ -9,17 +9,27 @@
 
 
 
-FLEnvironment * flEnvironmentNew(const size_t maximumSize)
+FLEnvironment * flEnvironmentNew(const size_t maximumNbGlobalVar,
+								 const size_t maximumVarNameStackSize,
+								 const size_t allocatedTermPoolSize)
 {
 	FLEnvironment * output;
 
 	FL_SIMPLE_ALLOC(output, 1);
-	FL_SIMPLE_ALLOC(output->varNameStack, maximumSize);
-	FL_SIMPLE_ALLOC(output->globalTerms, maximumSize);
-	FL_SIMPLE_ALLOC(output->globalVarNames, maximumSize);
+	FL_SIMPLE_ALLOC(output->varNameStack, maximumVarNameStackSize);
+	FL_SIMPLE_ALLOC(output->globalTerms, maximumNbGlobalVar);
+	FL_SIMPLE_ALLOC(output->globalVarNames, maximumNbGlobalVar);
+	FL_SIMPLE_ALLOC(output->allocatedTermPool, allocatedTermPoolSize);
+	FL_SIMPLE_ALLOC(output->availableTerms, allocatedTermPoolSize);
 
 	output->varNameStackSize = 0;
 	output->nbGlobalVar = 0;
+
+	output->nbAvailableTerms = allocatedTermPoolSize;
+
+	for (size_t i = 0 ; i < allocatedTermPoolSize ; i++){
+		output->availableTerms[i] = output->allocatedTermPool + i;
+	}
 
 	return output;
 }
@@ -30,24 +40,27 @@ void flEnvironmentFree(FLEnvironment * env)
 {
 	for (size_t i = 0 ; i < env->nbGlobalVar ; i++){
 		free(env->globalVarNames[i]);
-		flTermFree(env->globalTerms[i]);
 	}
 
 	free(env->varNameStack);
 	free(env->globalTerms);
 	free(env->globalVarNames);
+
+	free(env->allocatedTermPool);
+	free(env->availableTerms);
+
 	free(env);
 }
 
 
 
-FLTerm * flGetTermFromGlobalId(const FLTermId id, const FLEnvironment * const env)
+FLTerm * flGetTermFromGlobalId(const FLTermId id, FLEnvironment * const env)
 {
 	if (id >= env->nbGlobalVar){
 		return NULL;
 	}
 
-	return flTermCopy(env->globalTerms[id]);
+	return flTermCopy(env->globalTerms[id], env);
 }
 
 
