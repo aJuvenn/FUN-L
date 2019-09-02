@@ -1,0 +1,75 @@
+%YAML 1.2
+---
+# See http://www.sublimetext.com/docs/3/syntax.html
+
+name: FUN-L
+
+file_extensions: [funl, fl]
+
+scope: source.funl
+
+contexts:
+  # The prototype context is prepended to all contexts but those setting
+  # meta_include_prototype: false.
+  prototype:
+    - include: comments
+
+  main:
+    # The main context is the initial starting point of our syntax.
+    # Include other contexts from here (or specify them directly).
+    - include: keywords
+    - include: numbers
+
+    - match: \(
+      scope: brackets.funl
+      push: brackets
+
+    - match: \)
+      scope: unmatchedbracket.funl
+
+    - match: \[
+      scope: squaredbrackets.funl
+      push: sqbrackets
+
+    - match: \]
+      scope: unmatchedbracket.funl
+
+    - match : ;
+      scope: semicolon.funl
+
+
+
+  brackets:
+    - match: \)
+      scope: brackets.funl
+      pop: true
+    - include: main
+
+  sqbrackets:
+    - match: \]
+      scope: squaredbrackets.funl
+      pop: true
+    - include: main
+
+
+  keywords:
+    - match: '\b(let|rec|in|fun)\b'
+      scope: keyword.funl
+
+
+
+  numbers:
+    - match: '\b(-)?[0-9.]+\b'
+      scope: numbers.funl
+
+
+  comments:
+    - match: '#'
+      scope: comments.funl
+      push: inside_comment
+
+  inside_comment:
+    - meta_include_prototype: false
+    - meta_scope: comments.funl
+    - match: '#'
+      pop: true

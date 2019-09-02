@@ -13,8 +13,9 @@
 
 typedef enum {
 
-	FL_PARSE_TREE_INVALID = 0,
+	FL_PARSE_TREE_END_OF_FILE = 0,
 	FL_PARSE_TREE_VAR,
+	FL_PARSE_TREE_INTEGER,
 	FL_PARSE_TREE_CALL,
 	FL_PARSE_TREE_FUN,
 	FL_PARSE_TREE_LET
@@ -71,6 +72,7 @@ struct FLParseTree {
 	union {
 
 		char * var;
+		long long int integer;
 		FLParseTreeCallData call;
 		FLParseTreeFunData fun;
 		FLParseTreeLetData let;
@@ -104,13 +106,14 @@ void flParseTreeFree(FLParseTree * tree);
 
 
 FLParseTree * flParseTreeNewVar(char * name);
+FLParseTree * flParseTreeNewInteger(long long int integer);
 FLParseTree * flParseTreeNewCall(FLParseTree * func, size_t nbArguments, FLParseTree ** args, int isACallByName);
 FLParseTree * flParseTreeNewFun(size_t nbParameters, char ** params, FLParseTree * body);
 FLParseTree * flParseTreeNewLet(char * variable, FLParseTree * affectExpr, FLParseTree * followingExpr, int recursive);
+FLParseTree * flParseTreeNewEndOfFile();
 
 
-
-
+int flParseTreeIsAGlobalDefinition(const FLParseTree * const tree);
 
 
 #endif /* PARSE_TREE_FUNL__PARSE_TREE_H_ */

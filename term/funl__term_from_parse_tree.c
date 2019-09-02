@@ -34,6 +34,7 @@ FLTerm * flTermFromParseTreeVar(const FLParseTree * const var, FLEnvironment * c
 
 
 
+
 FLTerm * flTermFromParseTreeCall(const FLParseTree * const call, FLEnvironment * const env)
 {
 	FLTerm * output = flTermFromParseTree(call->data.call.function, env);
@@ -123,6 +124,9 @@ FLTerm * flTermFromParseTree(const FLParseTree * const tree, FLEnvironment * con
 	}
 
 	switch (tree->type){
+
+	case FL_PARSE_TREE_INTEGER:
+		return flTermNewInteger(tree->data.integer, env);
 
 	case FL_PARSE_TREE_CALL:
 		return flTermFromParseTreeCall(tree, env);

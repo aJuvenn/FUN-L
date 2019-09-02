@@ -31,6 +31,27 @@ FLParseTree * flParseTreeNewVar(char * name)
 }
 
 
+FLParseTree * flParseTreeNewEndOfFile()
+{
+	FLParseTree * output = flParseTreeNew();
+	output->type = FL_PARSE_TREE_END_OF_FILE;
+	return output;
+}
+
+
+
+
+FLParseTree * flParseTreeNewInteger(long long int integer)
+{
+	FLParseTree * output = flParseTreeNew();
+
+	output->type = FL_PARSE_TREE_INTEGER;
+	output->data.integer = integer;
+
+	return output;
+}
+
+
 FLParseTree * flParseTreeNewCall(FLParseTree * func, size_t nbArguments, FLParseTree * args[], int isACallByName)
 {
 	FLParseTree * output = flParseTreeNew();

@@ -20,7 +20,8 @@ typedef enum {
 	FL_TERM_FUN,
 	FL_TERM_VAR_ID,
 	FL_TERM_GLOBAL_VAR_ID,
-	FL_TERM_LET
+	FL_TERM_LET,
+	FL_TERM_INTERGER
 
 } FLTermType;
 
@@ -56,6 +57,7 @@ struct FLTerm {
 		FLTermLetData let;
 		FLTerm * funBody;
 		FLTermId varId;
+		long long int integer;
 
 	} data;
 };
@@ -84,6 +86,7 @@ typedef struct {
 
 
 FLTerm * flTermNewVarId(FLTermId id, FLEnvironment * const env);
+FLTerm * flTermNewInteger(long long int integer, FLEnvironment * const env);
 FLTerm * flTermNewGlobalVarId(FLTermId id, FLEnvironment * const env);
 FLTerm * flTermNewFun(FLTerm * body, FLEnvironment * const env);
 FLTerm * flTermNewCall(FLTerm * fun, FLTerm * arg, int isACallByName, FLEnvironment * const env);

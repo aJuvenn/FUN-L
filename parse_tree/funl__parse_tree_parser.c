@@ -201,6 +201,9 @@ FLParseTree * flParseTreeRecursive(FLStreamCursor * const cursor)
 	case FL_TOKEN_VARIABLE:
 		return flParseTreeNewVar(token.data.variableName);
 
+	case FL_TOKEN_INTEGER:
+		return flParseTreeNewInteger(token.data.integer);
+
 	case FL_TOKEN_KEYWORD:
 
 		switch (token.data.keyword){
@@ -222,6 +225,9 @@ FLParseTree * flParseTreeRecursive(FLStreamCursor * const cursor)
 	case FL_TOKEN_LEFT_SQUARE_BRACKET:
 		return flParseTreeLeftBracket(cursor, FL_TOKEN_RIGHT_SQUARE_BRACKET);
 
+	case FL_TOKEN_END_OF_STREAM:
+		return flParseTreeNewEndOfFile();
+
 	default:
 		return NULL;
 
@@ -241,6 +247,9 @@ FLParseTree * flParseTree(const FLStreamCursor cursor)
 
 	return output;
 }
+
+
+
 
 
 

@@ -6,118 +6,27 @@
  */
 #include "funl__include.h"
 
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/mman.h>
 
-
-void eval(const char * const str, FLEnvironment * const env)
-{
-	FLStreamCursor cursor = str;
-
-	while (1){
-
-		FLParseTree * tree = flParseTreeRecursive(&cursor);
-
-
-		if (tree == NULL || tree->type == FL_PARSE_TREE_INVALID){
-			break;
-		}
-
-		if (tree->type == FL_PARSE_TREE_LET && tree->data.let.following == NULL){
-
-			if (tree->data.let.recursive){
-				env->globalTerms[env->nbGlobalVar] = NULL;
-				env->globalVarNames[env->nbGlobalVar] = strdup(tree->data.let.variable);
-				env->nbGlobalVar++;
-			}
-
-			FLTerm * evaluatedTerm = flTermEvaluationFromParseTree(tree->data.let.affect, env);
-
-
-			if (evaluatedTerm == NULL){
-				fprintf(stderr, "ERROR\n");
-				return;
-			}
-
-			printf ("Global var %s : ", tree->data.let.variable);
-			flTermPrettyPrint(evaluatedTerm, env);
-			printf ("\n\n");
-
-			if (tree->data.let.recursive){
-				env->globalTerms[env->nbGlobalVar - 1] = evaluatedTerm;
-			} else {
-				env->globalTerms[env->nbGlobalVar] = evaluatedTerm;
-				env->globalVarNames[env->nbGlobalVar] = strdup(tree->data.let.variable);
-				env->nbGlobalVar++;
-			}
-
-			flParseTreeFree(tree);
-
-		} else {
-
-			FLTerm * evaluatedTerm = flTermEvaluationFromParseTree(tree, env);
-
-			if (evaluatedTerm == NULL){
-				fprintf(stderr, "ERROR\n");
-				return;
-			}
-
-			printf("Evaluated term for tree ");
-			flParseTreePrint(tree);
-			printf(" : ");
-			flTermPrettyPrint(evaluatedTerm, env);
-			printf("\n\n");
-
-			flParseTreeFree(tree);
-			flTermFree(evaluatedTerm, env);
-		}
-	}
-}
+#define FL_MAXIMUM_NB_GLOBAL_VAR 4096
+#define FL_MAXIMUM_VARIABLE_NAME_STACK_SIZE 1024
+#define FL_MAXIMUM_NB_OF_ALLOCATED_TERMS 1e6
 
 
 int main(int argc, char * argv[])
 {
+	static const char * const filePath = "code/lambda_calculus.funl";
 
+	FLEnvironment * env = flEnvironmentNew(FL_MAXIMUM_NB_GLOBAL_VAR,
+										   FL_MAXIMUM_VARIABLE_NAME_STACK_SIZE,
+										   FL_MAXIMUM_NB_OF_ALLOCATED_TERMS);
 
-#ifdef TEST_TOKENIZER
-	const char * s = "let rec true fun (x y) let z (+ x y) in z;";
+	int ret = flEvaluateFile(filePath, env);
 
-	FLStreamCursor cursor = s;
+	if (ret != EXIT_SUCCESS){
+		fprintf(stderr, "ERROR : file evaluation failed.\n");
+	}
 
-	FlToken tk;
+	flEnvironmentFree(env);
 
-	do {
-		flTokenNext(&cursor, &tk);
-		flTokenPrint(&tk);
-		printf("\n");
-
-		flTokenFree(&tk);
-
-	} while (tk.type != FL_TOKEN_END_OF_STREAM
-			&& tk.type != FL_TOKEN_INVALID);
-
-
-
-#endif
-
-
-	int fd = open("code/simple.funl", O_RDONLY);
-	int len = lseek(fd, 0, SEEK_END);
-	char *data = mmap(0, len, PROT_READ, MAP_PRIVATE, fd, 0);
-
-
-	printf("%s", data);
-
-	FLEnvironment * env2 = flEnvironmentNew(1000, 10000, 1e6);
-	eval(data, env2);
-
-	flEnvironmentFree(env2);
-
-	munmap(data, len);
-
-
-	return 0;
-
+	return ret;
 }
-

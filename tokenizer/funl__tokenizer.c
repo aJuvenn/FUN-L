@@ -11,12 +11,26 @@
 
 /*
  * Returns 1 if the char can be used in a variable name
- * (which mean it is printable and not a semicolon or bracket)
- * Otherwise it returns 0.
+ * (which mean it is printable and not a semicolon or bracket or hashtag)
+ *  Otherwise it returns 0.
  */
 int flIsValidCharForVariableName(char c)
 {
-	return isgraph(c) && c != '(' && c != ')' && c != ';' && c != '[' && c != ']';
+	static const char forbiddenCharacters[] = {
+			'(', ')', '[', ']', ';', '#'
+	};
+
+	if (!isgraph(c)){
+		return 0;
+	}
+
+	for (size_t i = 0 ; i < sizeof(forbiddenCharacters)/sizeof(char) ; i++){
+		if (c == forbiddenCharacters[i]){
+			return 0;
+		}
+	}
+
+	return 1;
 }
 
 
@@ -77,6 +91,68 @@ void flTokenNextFromWord(FLStreamCursor * const cursor, FlToken * const out_toke
 }
 
 
+
+void flTokenNextFromNumber(FLStreamCursor * const cursor, FlToken * const out_token)
+{
+	char firstChar = **cursor;
+	long long int parsedInteger;
+	unsigned numberSize = 1;
+
+	if (firstChar ==  '-'){
+		parsedInteger = 0;
+	} else {
+		parsedInteger = (long long int) (firstChar - '0');
+	}
+
+	while (isdigit((*cursor)[numberSize])){
+		parsedInteger = 10 * parsedInteger + (long long int) ((*cursor)[numberSize] - '0');
+		numberSize++;
+	}
+
+	if ((firstChar == '-' && numberSize == 1)
+			|| flIsValidCharForVariableName((*cursor)[numberSize])){
+		out_token->type = FL_TOKEN_INVALID;
+		return;
+	}
+
+	if (firstChar == '-'){
+		parsedInteger = -parsedInteger;
+	}
+
+	out_token->type = FL_TOKEN_INTEGER;
+	out_token->data.integer = parsedInteger;
+	*cursor += numberSize;
+}
+
+
+
+
+void flTokenSkipSpaceAndComment(FLStreamCursor * const cursor)
+{
+
+	while (isspace(**cursor) || **cursor == '#'){
+
+		if (**cursor != '#'){
+			(*cursor)++;
+			continue;
+		}
+
+		(*cursor)++;
+
+		while (**cursor != '#'){
+
+			if (**cursor == EOF || **cursor == 0){
+				return;
+			}
+
+			(*cursor)++;
+		}
+
+		(*cursor)++;
+	}
+}
+
+
 /*
  * Reads and increments the stream cursor to store into out_token the
  * next token in file. In case of failure, out_token receives
@@ -88,9 +164,7 @@ void flTokenNext(FLStreamCursor * const cursor, FlToken * const out_token)
 		return;
 	}
 
-	while (isspace(**cursor)){
-		(*cursor)++;
-	}
+	flTokenSkipSpaceAndComment(cursor);
 
 	switch (**cursor){
 
@@ -125,7 +199,13 @@ void flTokenNext(FLStreamCursor * const cursor, FlToken * const out_token)
 		return;
 
 	default:
-		flTokenNextFromWord(cursor, out_token);
+
+		//if (isdigit(**cursor) || **cursor == '-'){
+			//flTokenNextFromNumber(cursor, out_token);
+		//} else {
+			flTokenNextFromWord(cursor, out_token);
+		//}
+
 		return;
 	}
 
@@ -173,6 +253,10 @@ void flTokenPrint(const FlToken * const tk)
 
 	case FL_TOKEN_SEMICOLON:
 		printf("SEMICOLON");
+		return;
+
+	case FL_TOKEN_INTEGER:
+		printf("%lld", tk->data.integer);
 		return;
 
 	default:

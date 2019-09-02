@@ -27,6 +27,8 @@ typedef enum {
 	FL_TOKEN_SEMICOLON,
 	FL_TOKEN_KEYWORD,
 
+	FL_TOKEN_INTEGER,
+
 	FL_TOKEN_END_OF_STREAM
 
 } FLTokenType;
@@ -58,6 +60,7 @@ typedef struct {
 	union {
 		char * variableName;
 		FlTokenKeyWordData keyword;
+		long long int integer;
 	} data;
 
 } FlToken;

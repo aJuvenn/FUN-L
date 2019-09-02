@@ -1,0 +1,349 @@
+#
+	Example file of FUN-L code, only using lambda calculus computation model
+#
+
+
+#
+	There is only 3 kinds of objects:
+		- Variable
+		- Function taking one or several arguments to return an object
+		- Function call on one or several objects
+	
+	Variables can either refer to:
+		- One of a function argument in its body
+		- A global variable defined previously with a 'let VARIABLE EXPRESSION;' syntax
+		- A local variable defined with a 'let VARIABLE EXPRESSION in FOLLOWING' syntax in the FOLLOWING
+	
+	Function syntax:
+		- Function with one argument: fun (x) y 
+		- Function with several arguments: fun (x y) z   equivalent to   fun (x) fun (y) z
+		
+	Call syntax:
+		- Applying function on one argument in call by value: (f x)
+		- Applying function on several arguments in call by value: (f x y)   equivalent to   ((f x) y)
+		
+		- Applying function on one argument in call by name: [f x]
+		- Applying function on several arguments in call by name: [f x y]   equivalent to   [[f x] y]
+#
+
+
+
+
+#
+		BOOLEANS
+#
+	
+let false
+	fun (x y) y;
+	
+let true
+	fun (x y) x;
+		
+
+let if
+	#
+		Takes a boolean and two statements as input, returns the first if the boolean is true
+		and the second if it's false. If called in call by name (squared brackets), a lazy evaluation
+		is done, so only the returned statement is evaluated.
+	#
+	fun (boolean then else)
+		[boolean then else]; # equivalent to [[boolean then] else] #
+		
+		
+		
+let and
+	fun (b1 b2)
+		[if b1 b2 false];
+	
+let or
+	fun (b1 b2)
+		[if b1 true b2];
+		
+let not
+	fun (b)
+		[if b false true];
+	
+
+
+#
+		INTEGER DEFINITION
+#
+	
+	
+let 0
+	fun (f x) x;
+		
+let succ
+	fun (n f x) ((n f) (f x));
+	
+let pred
+	fun (n f x)
+		(n (fun (g h) (h (g f))) 
+		   (fun (u) x)
+		   (fun (u) u)
+		);
+
+let iszero?
+	fun (n)
+		(n (fun (x) false) true);
+
+let 1 (succ 0); let 2 (succ 1); let 3 (succ 2); let 4 (succ 3);
+let 5 (succ 4); let 6 (succ 5); let 7 (succ 6); let 8 (succ 7); let 9 (succ 8);
+let 10 (succ 9); let 11 (succ 10); let 12 (succ 11); let 13 (succ 12); let 14 (succ 13);
+let 15 (succ 14); let 16 (succ 15); let 17 (succ 16); let 18 (succ 17); let 19 (succ 18);
+let 20 (succ 19); let 21 (succ 20); let 22 (succ 21); let 23 (succ 22); let 24 (succ 23);
+let 25 (succ 24); let 26 (succ 25); let 27 (succ 26); let 28 (succ 27); let 29 (succ 28);
+let 30 (succ 29); let 31 (succ 30); let 32 (succ 31); let 33 (succ 32); let 34 (succ 33);
+let 35 (succ 34); let 36 (succ 35); let 37 (succ 36); let 38 (succ 37); let 39 (succ 38);
+let 40 (succ 39); let 41 (succ 40); let 42 (succ 41); let 43 (succ 42); let 44 (succ 43);
+let 45 (succ 44); let 46 (succ 45); let 47 (succ 46); let 48 (succ 47); let 49 (succ 48);
+let 50 (succ 49); let 51 (succ 50); let 52 (succ 51); let 53 (succ 52); let 54 (succ 53);
+let 55 (succ 54); let 56 (succ 55); let 57 (succ 56); let 58 (succ 57); let 59 (succ 58);
+let 60 (succ 59); let 61 (succ 60); let 62 (succ 61); let 63 (succ 62); let 64 (succ 63);
+
+
+
+
+
+
+#
+		INTEGER OPERATORS
+#
+
+
+let +
+	fun (a b)
+		(b succ a);
+
+let -
+	fun (a b)
+		(b pred a);
+
+let *
+	fun (a b)
+		(a (+ b) 0);
+	
+let ^
+	fun (a b)
+		(b (* a) 1);
+
+
+let =
+	fun (a b)
+		[and (iszero? (- b a))
+			 (iszero? (- a b))
+		];
+		
+let >
+	fun (a b)
+		(not (iszero? (- a b)));
+		
+		
+let <
+	fun (a b)
+		(> b a);
+		
+let >=
+	fun (a b)
+		[or (> a b)
+			(= a b)
+		];
+		
+let <=
+	fun (a b)
+		(>= b a);
+		
+	
+	
+	
+#
+	COMPLEX INTEGER FUNCTIONS
+#
+	
+#
+	Lambda calculus does not allow self reference and thus recursion. That's why
+	a fixed-point combinator is needed in order to simulate a function that calls itself.
+#
+
+let Y
+	#
+		Function that verifies : (Y f) = (f (Y f))
+	#
+	fun (f)
+		let g 
+			fun (x) [f (x x)]
+		in 
+		[g g];
+	
+	
+	
+let factorial
+	(Y fun (g n)
+		[if (iszero? n)
+			1
+			(* n (g (pred n)))
+		]);
+
+
+let /
+	(Y fun (g a b)
+		[if (< a b)
+			0
+			(succ (g (- a b) b))
+		]);
+		
+let %
+	fun (a b)
+		(- a 
+		   (* b (/ a b))
+		);
+
+		
+let gcd
+	(Y fun (g a b)
+		[if (iszero? b)
+			a
+			(g b (% a b))
+		]);
+	
+	
+	
+#
+		COUPLES
+#
+
+
+let cons
+	fun (x y f)
+		(f x y);
+		
+let fst
+	fun (c)
+		(c true);
+		
+let snd
+	fun (c)
+		(c false);
+		
+	
+#
+		LISTS
+#
+		
+		
+let </>
+	#
+		Empty list
+	#
+	fun (x) true;
+	
+	
+let isempty?
+	fun (l)
+		(l (fun (x y) false));
+	
+
+
+let head fst;
+
+
+let tail
+	fun (l)
+		[if (isempty? l)
+			</>
+			(snd l)
+		];
+		
+		
+let foldl
+	(Y fun (g f l b)
+		[if (isempty? l)
+			b
+			(f (head l) (g f (tail l) b))
+		]);
+		
+		
+
+let foldr
+	(Y fun (g f l b)
+		[if (isempty? l)
+			b
+			(g f (tail l) (f (head l) b))
+		]);
+		
+			
+let map
+	(Y fun (g f l)
+		[if (isempty? l)
+			</>
+			(cons (f (head l)) 
+				  (g f (tail l))
+			)
+		]);
+			
+			
+let apply
+	(Y fun (g f l)
+		[if (isempty? l)
+			(g (f (head l)) 
+				   (tail l)
+			)
+		]);
+			
+			
+let concat
+	fun (l1 l2)
+		(foldl cons l1 l2);
+
+		
+let reverse
+	fun (l)
+		(foldr cons l </>);
+		
+		
+let append
+	fun (x l)
+		(foldl cons l (cons x </>));
+
+
+	
+let insert
+	(Y fun (g less-or-equal? x l)
+		[if (isempty? l)
+			(cons x </>)
+			let y 
+				(head l)
+			in
+			[if (less-or-equal? x y)
+				(cons x l)
+				(cons y (g less-or-equal? x (tail l)))
+			]
+		]);	
+	
+	
+let sort
+	(Y fun (g less-or-equal? l)
+		[if (isempty? l)
+			</>
+			(insert less-or-equal? (head l) (g less-or-equal? (tail l)))
+		]);
+			
+			
+	
+	
+#
+		TESTS
+#
+	
+(factorial 3)	
+(= (factorial 3) 6)
+
+(gcd (* 3 3) (* 3 2))
+(= (gcd (* 3 3) (* 3 2)) 3)
+
+
+let list-to-sort
+	(cons 4 (cons 2 (cons 3 (cons 1 </>))))
+in
+(sort <= list-to-sort)
+	

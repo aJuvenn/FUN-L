@@ -20,6 +20,7 @@ FLTerm * flTermNew(FLEnvironment * const env)
 }
 
 
+
 FLTerm * flTermNewFun(FLTerm * funBody, FLEnvironment * const env)
 {
 	FLTerm * output = flTermNew(env);
@@ -40,6 +41,18 @@ FLTerm * flTermNewVarId(FLTermId id, FLEnvironment * const env)
 
 	return output;
 }
+
+
+FLTerm * flTermNewInteger(long long int integer, FLEnvironment * const env)
+{
+	FLTerm * output = flTermNew(env);
+
+	output->type = FL_TERM_INTERGER;
+	output->data.integer = integer;
+
+	return output;
+}
+
 
 
 FLTerm * flTermNewGlobalVarId(FLTermId id, FLEnvironment * const env)
@@ -95,6 +108,10 @@ void flTermPrint(const FLTerm * const term)
 		printf("%u", term->data.varId);
 		return;
 
+	case FL_TERM_INTERGER:
+		printf("'%lld'", term->data.integer);
+		return;
+
 	case FL_TERM_GLOBAL_VAR_ID:
 		printf("<g>%u", term->data.varId);
 		return;
@@ -141,6 +158,9 @@ FLTerm * flTermCopy(const FLTerm * const term, FLEnvironment * const env)
 
 	case FL_TERM_VAR_ID:
 		return flTermNewVarId(term->data.varId, env);
+
+	case FL_TERM_INTERGER:
+		return flTermNewInteger(term->data.integer, env);
 
 	case FL_TERM_GLOBAL_VAR_ID:
 		return flTermNewGlobalVarId(term->data.varId, env);

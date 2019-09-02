@@ -104,6 +104,10 @@ void flTermPrettyPrint(const FLTerm * const term, const FLEnvironment * const en
 		printf("%u", term->data.varId);
 		return;
 
+	case FL_TERM_INTERGER:
+		printf("'%lld'", term->data.integer);
+		return;
+
 	case FL_TERM_GLOBAL_VAR_ID:
 
 		if (term->data.varId >= env->nbGlobalVar){
