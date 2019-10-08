@@ -47,7 +47,7 @@ FLTerm * flTermNewInteger(long long int integer, FLEnvironment * const env)
 {
 	FLTerm * output = flTermNew(env);
 
-	output->type = FL_TERM_INTERGER;
+	output->type = FL_TERM_INTEGER;
 	output->data.integer = integer;
 
 	return output;
@@ -91,56 +91,29 @@ FLTerm * flTermNewLet(FLTerm * affect, FLTerm * following, FLEnvironment * const
 	return output;
 }
 
-
-
-
-
-void flTermPrint(const FLTerm * const term)
+FLTerm * flTermNewOpCall(FlTokenOperatorData op, size_t nbArguments, FLTerm ** arguments, FLEnvironment * const env)
 {
-	if (term == NULL){
-		printf("(NULL)");
-		return;
-	}
+	FLTerm * output = flTermNew(env);
 
-	switch (term->type){
+	output->type = FL_TERM_OPCALL;
+	output->data.opCall.op = op;
+	output->data.opCall.nbArguments = nbArguments;
+	output->data.opCall.arguments = arguments;
 
-	case FL_TERM_VAR_ID:
-		printf("%u", term->data.varId);
-		return;
-
-	case FL_TERM_INTERGER:
-		printf("'%lld'", term->data.integer);
-		return;
-
-	case FL_TERM_GLOBAL_VAR_ID:
-		printf("<g>%u", term->data.varId);
-		return;
-
-	case FL_TERM_FUN:
-		printf("L.");
-		flTermPrint(term->data.funBody);
-		return;
-
-	case FL_TERM_CALL:
-		printf(term->data.call.isACallByName ? "[" : "(");
-		flTermPrint(term->data.call.func);
-		printf(" ");
-		flTermPrint(term->data.call.arg);
-		printf(term->data.call.isACallByName ? "]" : ")");
-		return;
+	return output;
+}
 
 
-	case FL_TERM_LET:
-		printf("let ");
-		flTermPrint(term->data.let.affect);
-		printf(" in ");
-		flTermPrint(term->data.let.following);
-		return;
+FLTerm * flTermNewIfElse(FLTerm * condition, FLTerm * thenValue, FLTerm * elseValue, FLEnvironment * const env)
+{
+	FLTerm * output = flTermNew(env);
 
-	default:
-		printf("<INVALID TERM>");
-		return;
-	}
+	output->type = FL_TERM_IF_ELSE;
+	output->data.ifElse.condition = condition;
+	output->data.ifElse.thenValue = thenValue;
+	output->data.ifElse.elseValue = elseValue;
+
+	return output;
 }
 
 
@@ -159,7 +132,7 @@ FLTerm * flTermCopy(const FLTerm * const term, FLEnvironment * const env)
 	case FL_TERM_VAR_ID:
 		return flTermNewVarId(term->data.varId, env);
 
-	case FL_TERM_INTERGER:
+	case FL_TERM_INTEGER:
 		return flTermNewInteger(term->data.integer, env);
 
 	case FL_TERM_GLOBAL_VAR_ID:
@@ -170,14 +143,33 @@ FLTerm * flTermCopy(const FLTerm * const term, FLEnvironment * const env)
 
 	case FL_TERM_CALL:
 		return flTermNewCall(flTermCopy(term->data.call.func, env),
-							 flTermCopy(term->data.call.arg, env),
-							 term->data.call.isACallByName,
-							 env);
+				flTermCopy(term->data.call.arg, env),
+				term->data.call.isACallByName,
+				env);
 
 	case FL_TERM_LET:
 		return flTermNewLet(flTermCopy(term->data.let.affect, env),
-							flTermCopy(term->data.let.following, env),
-							env);
+				flTermCopy(term->data.let.following, env),
+				env);
+
+	case FL_TERM_IF_ELSE:
+		return flTermNewIfElse(flTermCopy(term->data.ifElse.condition, env),
+				flTermCopy(term->data.ifElse.thenValue, env),
+				flTermCopy(term->data.ifElse.elseValue, env),
+				env);
+
+	case FL_TERM_OPCALL:{
+
+		size_t nbArguments = term->data.opCall.nbArguments;
+		FLTerm ** argumentsCopy;
+		FL_SIMPLE_ALLOC(argumentsCopy, nbArguments);
+
+		for (size_t i = 0 ; i < nbArguments ; i++){
+			argumentsCopy[i] = flTermCopy(term->data.opCall.arguments[i], env);
+		}
+
+		return flTermNewOpCall(term->data.opCall.op, nbArguments, argumentsCopy, env);
+	}
 
 	default:
 		return NULL;
@@ -193,28 +185,67 @@ void flTermFree(FLTerm * term, FLEnvironment * const env)
 		return;
 	}
 
-	switch (term->type){
+	FLTerm ** availableTerms = env->availableTerms;
+	const size_t remainigTermsStackOffset = env->maxNbAvailableTerms - 1;
 
-	case FL_TERM_FUN:
-		flTermFree(term->data.funBody, env);
-		break;
+	FLTerm * termToFree;
 
-	case FL_TERM_CALL:
-		flTermFree(term->data.call.func, env);
-		flTermFree(term->data.call.arg, env);
-		break;
+	size_t nbRemainingTermsToFree = 1;
+	availableTerms[remainigTermsStackOffset] = term;
 
-	case FL_TERM_LET:
-		flTermFree(term->data.let.affect, env);
-		flTermFree(term->data.let.following, env);
-		break;
+	while (nbRemainingTermsToFree != 0){
 
-	default:
-		break;
+		termToFree = availableTerms[remainigTermsStackOffset - (--nbRemainingTermsToFree)];
 
+		switch (termToFree->type){
+
+		case FL_TERM_FUN:
+			availableTerms[remainigTermsStackOffset - (nbRemainingTermsToFree++)] = termToFree->data.funBody;
+			break;
+
+		case FL_TERM_CALL:{
+			FLTermCallData data = termToFree->data.call;
+			availableTerms[remainigTermsStackOffset - (nbRemainingTermsToFree++)] = data.func;
+			availableTerms[remainigTermsStackOffset - (nbRemainingTermsToFree++)] = data.arg;
+			break;
+		}
+
+		case FL_TERM_LET:{
+			FLTermLetData data = termToFree->data.let;
+			availableTerms[remainigTermsStackOffset - (nbRemainingTermsToFree++)] = data.affect;
+			availableTerms[remainigTermsStackOffset - (nbRemainingTermsToFree++)] = data.following;
+			break;
+		}
+
+		case FL_TERM_IF_ELSE:{
+			FLTermIfElseData data = termToFree->data.ifElse;
+			availableTerms[remainigTermsStackOffset - (nbRemainingTermsToFree++)] = data.condition;
+			availableTerms[remainigTermsStackOffset - (nbRemainingTermsToFree++)] = data.thenValue;
+			availableTerms[remainigTermsStackOffset - (nbRemainingTermsToFree++)] = data.elseValue;
+			break;
+		}
+
+		case FL_TERM_OPCALL:{
+
+			FLTermOpCallData data = termToFree->data.opCall;
+			FLTerm ** arguments = data.arguments;
+			const size_t nbArguments = data.nbArguments;
+
+			for (size_t i = 0 ; i < nbArguments ; i++){
+				availableTerms[remainigTermsStackOffset - (nbRemainingTermsToFree++)] = arguments[i];
+			}
+
+			free(arguments);
+
+			break;
+		}
+
+		default:
+			break;
+		}
+
+		availableTerms[env->nbAvailableTerms++] = termToFree;
 	}
-
-	env->availableTerms[env->nbAvailableTerms++] = term;
 }
 
 

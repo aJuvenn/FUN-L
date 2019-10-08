@@ -10,16 +10,39 @@
 
 
 /*
+ * List of printable characters that can't be used in variable or operator names
+ */
+static const char forbiddenCharacters[] = {
+			'(', ')', '[', ']', ';', '#'
+};
+
+
+/*
+ * List of langage key words. Their order must be the same as
+ * in FlTokenKeyWordData corresponding enum.
+ */
+static const char * flKeyWords[FL_KEY_WORD_MAX_VALUE] = {
+		"fun", "let", "in", "rec", "if", "else", "end"
+};
+
+
+/*
+ * List of operators. Their order must be the same as
+ * in FlTokenOperatorData corresponding enum.
+ */
+const char * flOperators[FL_OPERATOR_MAX_VALUE] = {
+		"+", "*", "-", "/", "%", ">", ">=", "<", "<=", "=="
+};
+
+
+
+/*
  * Returns 1 if the char can be used in a variable name
  * (which mean it is printable and not a semicolon or bracket or hashtag)
  *  Otherwise it returns 0.
  */
 int flIsValidCharForVariableName(char c)
 {
-	static const char forbiddenCharacters[] = {
-			'(', ')', '[', ']', ';', '#'
-	};
-
 	if (!isgraph(c)){
 		return 0;
 	}
@@ -34,16 +57,6 @@ int flIsValidCharForVariableName(char c)
 }
 
 
-/*
- * List of langage key words. Their order must be the same as
- * in FlTokenKeyWordData corresponding enum.
- */
-static const char * flKeyWords[FL_KEY_WORD_MAX_VALUE] = {
-		"fun",
-		"let",
-		"in",
-		"rec"
-};
 
 
 /*
@@ -70,6 +83,9 @@ void flTokenNextFromWord(FLStreamCursor * const cursor, FlToken * const out_toke
 	memcpy(tokenName, *cursor, wordSize);
 	tokenName[wordSize] = 0;
 
+	/*
+	 * Checks if word is a key word
+	 */
 	for (FlTokenKeyWordData kw = 0 ; kw < FL_KEY_WORD_MAX_VALUE ; ++kw){
 
 		if (strcmp(tokenName, flKeyWords[kw]) != 0){
@@ -85,6 +101,29 @@ void flTokenNextFromWord(FLStreamCursor * const cursor, FlToken * const out_toke
 		return;
 	}
 
+
+	/*
+	 * Checks if word is an operator
+	 */
+	for (FlTokenOperatorData op = 0 ; op < FL_OPERATOR_MAX_VALUE ; ++op){
+
+		if (strcmp(tokenName, flOperators[op]) != 0){
+			continue;
+		}
+
+		free(tokenName);
+
+		out_token->type = FL_TOKEN_OPERATOR;
+		out_token->data.operator = op;
+
+		*cursor += wordSize;
+		return;
+	}
+
+
+	/*
+	 * Then the word is a variable name
+	 */
 	out_token->type = FL_TOKEN_VARIABLE;
 	out_token->data.variableName = tokenName;
 	*cursor += wordSize;
@@ -200,11 +239,11 @@ void flTokenNext(FLStreamCursor * const cursor, FlToken * const out_token)
 
 	default:
 
-		//if (isdigit(**cursor) || **cursor == '-'){
-			//flTokenNextFromNumber(cursor, out_token);
-		//} else {
+		if (isdigit(**cursor) || (**cursor == '-' && isdigit(*(*cursor + 1)))){
+			flTokenNextFromNumber(cursor, out_token);
+		} else {
 			flTokenNextFromWord(cursor, out_token);
-		//}
+		}
 
 		return;
 	}
@@ -225,6 +264,10 @@ void flTokenPrint(const FlToken * const tk)
 
 	case FL_TOKEN_KEYWORD:
 		printf("KEYWORD(%s)", flKeyWords[tk->data.keyword]);
+		return;
+
+	case FL_TOKEN_OPERATOR:
+		printf("OPERATOR(%s)", flOperators[tk->data.operator]);
 		return;
 
 	case FL_TOKEN_LEFT_BRACKET:

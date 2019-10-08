@@ -31,6 +31,18 @@ FLParseTree * flParseTreeNewVar(char * name)
 }
 
 
+FLParseTree * flParseTreeNewOp(FlTokenOperatorData const op)
+{
+	FLParseTree * output = flParseTreeNew();
+
+	output->type = FL_PARSE_TREE_OP;
+	output->data.op = op;
+
+	return output;
+}
+
+
+
 FLParseTree * flParseTreeNewEndOfFile()
 {
 	FLParseTree * output = flParseTreeNew();
@@ -99,6 +111,24 @@ FLParseTree * flParseTreeNewLet(char * variable, FLParseTree * affectExpr, FLPar
 }
 
 
+
+FLParseTree * flParseTreeNewIfElse(FLParseTree * condition, FLParseTree * thenValue, FLParseTree * elseValue)
+{
+	FLParseTree * output = flParseTreeNew();
+
+	output->type = FL_PARSE_TREE_IF_ELSE;
+
+	output->data.ifElse.condition = condition;
+	output->data.ifElse.thenValue = thenValue;
+	output->data.ifElse.elseValue = elseValue;
+
+	return output;
+}
+
+
+
+
+
 void flParseTreeFree(FLParseTree * tree)
 {
 
@@ -148,6 +178,12 @@ void flParseTreeFree(FLParseTree * tree)
 
 		break;
 
+	case FL_PARSE_TREE_IF_ELSE:
+
+		flParseTreeFree(tree->data.ifElse.condition);
+		flParseTreeFree(tree->data.ifElse.thenValue);
+		flParseTreeFree(tree->data.ifElse.elseValue);
+		break;
 
 	default:
 		break;

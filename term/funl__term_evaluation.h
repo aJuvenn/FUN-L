@@ -21,7 +21,9 @@ typedef enum {
 	FL_TERM_VAR_ID,
 	FL_TERM_GLOBAL_VAR_ID,
 	FL_TERM_LET,
-	FL_TERM_INTERGER
+	FL_TERM_INTEGER,
+	FL_TERM_OPCALL,
+	FL_TERM_IF_ELSE
 
 } FLTermType;
 
@@ -35,6 +37,16 @@ typedef struct {
 } FLTermCallData;
 
 
+
+typedef struct {
+
+	FlTokenOperatorData op;
+	size_t nbArguments;
+	FLTerm ** arguments;
+
+} FLTermOpCallData;
+
+
 typedef struct {
 
 	FLTerm * affect;
@@ -42,6 +54,14 @@ typedef struct {
 
 } FLTermLetData;
 
+
+typedef struct {
+
+	FLTerm * condition;
+	FLTerm * thenValue;
+	FLTerm * elseValue;
+
+} FLTermIfElseData;
 
 
 typedef uint32_t FLTermId;
@@ -58,6 +78,8 @@ struct FLTerm {
 		FLTerm * funBody;
 		FLTermId varId;
 		long long int integer;
+		FLTermOpCallData opCall;
+		FLTermIfElseData ifElse;
 
 	} data;
 };
@@ -79,6 +101,7 @@ typedef struct {
 	FLTerm * allocatedTermPool;
 	FLTerm ** availableTerms;
 	size_t nbAvailableTerms;
+	size_t maxNbAvailableTerms;
 
 } FLEnvironment;
 
@@ -91,12 +114,14 @@ FLTerm * flTermNewGlobalVarId(FLTermId id, FLEnvironment * const env);
 FLTerm * flTermNewFun(FLTerm * body, FLEnvironment * const env);
 FLTerm * flTermNewCall(FLTerm * fun, FLTerm * arg, int isACallByName, FLEnvironment * const env);
 FLTerm * flTermNewLet(FLTerm * affect, FLTerm * following, FLEnvironment * const env);
+FLTerm * flTermNewOpCall(FlTokenOperatorData op, size_t nbArguments, FLTerm ** arguments, FLEnvironment * const env);
+FLTerm * flTermNewIfElse(FLTerm * condition, FLTerm * thenValue, FLTerm * elseValue, FLEnvironment * const env);
+
 
 FLTerm * flTermCopy(const FLTerm * const term, FLEnvironment * const env);
 
 
 
-void flTermPrint(const FLTerm * const term);
 void flTermFree(FLTerm * term, FLEnvironment * const env);
 
 
@@ -126,7 +151,7 @@ FLTermId flGlobalIdFromName(const char * const globalVarName, const FLEnvironmen
 
 
 
-void flTermPrettyPrint(const FLTerm * const term, const FLEnvironment * const env);
+void flTermPrint(const FLTerm * const term, const FLEnvironment * const env);
 
 
 

@@ -31,6 +31,8 @@ FLEnvironment * flEnvironmentNew(const size_t maximumNbGlobalVar,
 		output->availableTerms[i] = output->allocatedTermPool + i;
 	}
 
+	output->maxNbAvailableTerms = allocatedTermPoolSize;
+
 	return output;
 }
 
@@ -90,8 +92,9 @@ FLTermId flGlobalIdFromName(const char * const globalVarName, const FLEnvironmen
 
 
 
+extern const char *flOperators[];
 
-void flTermPrettyPrint(const FLTerm * const term, const FLEnvironment * const env)
+void flTermPrint(const FLTerm * const term, const FLEnvironment * const env)
 {
 	if (term == NULL){
 		printf("(NULL)");
@@ -101,11 +104,11 @@ void flTermPrettyPrint(const FLTerm * const term, const FLEnvironment * const en
 	switch (term->type){
 
 	case FL_TERM_VAR_ID:
-		printf("%u", term->data.varId);
+		printf("$%u", term->data.varId);
 		return;
 
-	case FL_TERM_INTERGER:
-		printf("'%lld'", term->data.integer);
+	case FL_TERM_INTEGER:
+		printf("%lld", term->data.integer);
 		return;
 
 	case FL_TERM_GLOBAL_VAR_ID:
@@ -120,24 +123,47 @@ void flTermPrettyPrint(const FLTerm * const term, const FLEnvironment * const en
 
 	case FL_TERM_FUN:
 		printf("L.");
-		flTermPrettyPrint(term->data.funBody, env);
+		flTermPrint(term->data.funBody, env);
 		return;
 
 	case FL_TERM_CALL:
 		printf(term->data.call.isACallByName ? "[" : "(");
-		flTermPrettyPrint(term->data.call.func, env);
+		flTermPrint(term->data.call.func, env);
 		printf(" ");
-		flTermPrettyPrint(term->data.call.arg, env);
+		flTermPrint(term->data.call.arg, env);
 		printf(term->data.call.isACallByName ? "]" : ")");
 		return;
 
 
 	case FL_TERM_LET:
 		printf("let ");
-		flTermPrettyPrint(term->data.let.affect, env);
+		flTermPrint(term->data.let.affect, env);
 		printf(" in ");
-		flTermPrettyPrint(term->data.let.following, env);
+		flTermPrint(term->data.let.following, env);
 		return;
+
+	case FL_TERM_IF_ELSE:
+		printf("if ");
+		flTermPrint(term->data.ifElse.condition, env);
+		printf(" ");
+		flTermPrint(term->data.ifElse.thenValue, env);
+		printf(" else ");
+		flTermPrint(term->data.ifElse.elseValue, env);
+		printf(" end");
+		return;
+
+	case FL_TERM_OPCALL:
+
+		printf("(%s", flOperators[term->data.opCall.op]);
+
+		for (size_t i = 0 ; i < term->data.opCall.nbArguments ; i++){
+			printf(" ");
+			flTermPrint(term->data.opCall.arguments[i], env);
+		}
+
+		printf(")");
+
+		break;
 
 	default:
 		printf("<INVALID TERM>");

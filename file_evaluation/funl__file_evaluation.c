@@ -26,7 +26,7 @@ int flEvaluateGlobalDefinition(const FLParseTree * const tree, FLEnvironment * c
 
 #ifdef FL_PRINT_GLOBAL_DEFINITIONS
 	printf ("Global var %s : ", tree->data.let.variable);
-	flTermPrettyPrint(evaluatedTerm, env);
+	flTermPrint(evaluatedTerm, env);
 	printf ("\n\n");
 #endif
 
@@ -54,7 +54,7 @@ int flEvaluateAndPrintExpression(const FLParseTree * const tree, FLEnvironment *
 	printf("Input  expr:\t");
 	flParseTreePrint(tree);
 	printf("\nOutput term:\t");
-	flTermPrettyPrint(evaluatedTerm, env);
+	flTermPrint(evaluatedTerm, env);
 	printf("\n\n");
 
 	flTermFree(evaluatedTerm, env);

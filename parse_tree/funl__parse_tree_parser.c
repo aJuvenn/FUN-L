@@ -190,6 +190,54 @@ FLParseTree * flParseLetTree(FLStreamCursor * const cursor)
 
 
 
+FLParseTree * flParseIfElseTree(FLStreamCursor * const cursor)
+{
+	FlToken token;
+
+	FLParseTree * condition = flParseTreeRecursive(cursor);
+
+	if (condition == NULL){
+		return NULL;
+	}
+
+	FLParseTree * thenValue = flParseTreeRecursive(cursor);
+
+	if (thenValue == NULL){
+		flParseTreeFree(condition);
+		return NULL;
+	}
+
+	flTokenNext(cursor, &token);
+
+	if (token.type != FL_TOKEN_KEYWORD || token.data.keyword != FL_KEY_WORD_ELSE){
+		flParseTreeFree(condition);
+		flParseTreeFree(thenValue);
+		flTokenFree(&token);
+		return NULL;
+	}
+
+	FLParseTree * elseValue = flParseTreeRecursive(cursor);
+
+	if (elseValue == NULL){
+		flParseTreeFree(condition);
+		flParseTreeFree(thenValue);
+		return NULL;
+	}
+
+	flTokenNext(cursor, &token);
+
+	if (token.type != FL_TOKEN_KEYWORD || token.data.keyword != FL_KEY_WORD_END){
+		flParseTreeFree(condition);
+		flParseTreeFree(thenValue);
+		flParseTreeFree(elseValue);
+		flTokenFree(&token);
+		return NULL;
+	}
+
+	return flParseTreeNewIfElse(condition, thenValue, elseValue);
+}
+
+
 
 FLParseTree * flParseTreeRecursive(FLStreamCursor * const cursor)
 {
@@ -204,15 +252,21 @@ FLParseTree * flParseTreeRecursive(FLStreamCursor * const cursor)
 	case FL_TOKEN_INTEGER:
 		return flParseTreeNewInteger(token.data.integer);
 
+	case FL_TOKEN_OPERATOR:
+		return flParseTreeNewOp(token.data.operator);
+
 	case FL_TOKEN_KEYWORD:
 
 		switch (token.data.keyword){
 
-		case FL_KEYWORD_FUN:
+		case FL_KEY_WORD_FUN:
 			return flParseFunTree(cursor);
 
 		case FL_KEY_WORD_LET:
 			return flParseLetTree(cursor);
+
+		case FL_KEY_WORD_IF:
+			return flParseIfElseTree(cursor);
 
 		default:
 			return NULL;

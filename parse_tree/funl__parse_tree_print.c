@@ -13,16 +13,6 @@
 void flParseTreePrint(const FLParseTree * const tree);
 
 
-void flParseTreePrintVar(const FLParseTree * const tree)
-{
-	printf("%s", tree->data.var);
-}
-
-
-void flParseTreePrintInteger(const FLParseTree * const tree)
-{
-	printf("%lld", tree->data.integer);
-}
 
 
 void flParseTreePrintCall(const FLParseTree * const tree)
@@ -77,12 +67,18 @@ void flParseTreePrintLet(const FLParseTree * const tree)
 	printf(")");
 }
 
-
-
-void flParseTreePrintEndOfFile(const FLParseTree * const tree)
+void flParseTreePrintIfElse(const FLParseTree * const tree)
 {
-	printf("<END OF FILE>");
+	printf("if ");
+	flParseTreePrint(tree->data.ifElse.condition);
+	printf(" ");
+	flParseTreePrint(tree->data.ifElse.thenValue);
+	printf(" else ");
+	flParseTreePrint(tree->data.ifElse.elseValue);
+	printf(" end");
 }
+
+
 
 
 
@@ -96,11 +92,11 @@ void flParseTreePrint(const FLParseTree * const tree)
 	switch (tree->type){
 
 	case FL_PARSE_TREE_VAR:
-		flParseTreePrintVar(tree);
+		printf("%s", tree->data.var);
 		return;
 
 	case FL_PARSE_TREE_INTEGER:
-		flParseTreePrintInteger(tree);
+		printf("%lld", tree->data.integer);
 		return;
 
 	case FL_PARSE_TREE_CALL:
@@ -116,9 +112,16 @@ void flParseTreePrint(const FLParseTree * const tree)
 		return;
 
 	case FL_PARSE_TREE_END_OF_FILE:
-		flParseTreePrintEndOfFile(tree);
+		printf("<END OF FILE>");
 		return;
 
+	case FL_PARSE_TREE_OP:
+		printf("%s", flOperators[tree->data.op]);
+		return;
+
+	case FL_PARSE_TREE_IF_ELSE:
+		flParseTreePrintIfElse(tree);
+		return;
 	}
 }
 

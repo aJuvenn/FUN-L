@@ -28,6 +28,7 @@ typedef enum {
 	FL_TOKEN_KEYWORD,
 
 	FL_TOKEN_INTEGER,
+	FL_TOKEN_OPERATOR,
 
 	FL_TOKEN_END_OF_STREAM
 
@@ -37,14 +38,44 @@ typedef enum {
 
 typedef enum {
 
-	FL_KEYWORD_FUN = 0,
+	FL_KEY_WORD_FUN = 0,
 	FL_KEY_WORD_LET,
 	FL_KEY_WORD_IN,
 	FL_KEY_WORD_REC,
 
+	FL_KEY_WORD_IF,
+	FL_KEY_WORD_ELSE,
+	FL_KEY_WORD_END,
+
 	FL_KEY_WORD_MAX_VALUE
 
 } FlTokenKeyWordData;
+
+
+
+typedef enum {
+
+	FL_OPERATOR_PLUS = 0,
+	FL_OPERATOR_TIMES,
+	FL_OPERATOR_MINUS,
+	FL_OPERATOR_DIV,
+	FL_OPERATOR_MOD,
+
+	FL_OPERATOR_GT,
+	FL_OPERATOR_GEQ,
+	FL_OPERATOR_LT,
+	FL_OPERATOR_LEQ,
+	FL_OPERATOR_EQ,
+
+	FL_OPERATOR_MAX_VALUE
+
+} FlTokenOperatorData;
+
+
+extern const char * flOperators[];
+
+
+
 
 
 /*
@@ -61,6 +92,7 @@ typedef struct {
 		char * variableName;
 		FlTokenKeyWordData keyword;
 		long long int integer;
+		FlTokenOperatorData operator;
 	} data;
 
 } FlToken;

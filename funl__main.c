@@ -14,7 +14,7 @@
 
 int main(int argc, char * argv[])
 {
-	static const char * const filePath = "code/lambda_calculus.funl";
+	static const char * const filePath = "code/example.funl";
 
 	FLEnvironment * env = flEnvironmentNew(FL_MAXIMUM_NB_GLOBAL_VAR,
 										   FL_MAXIMUM_VARIABLE_NAME_STACK_SIZE,

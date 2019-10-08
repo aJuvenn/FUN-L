@@ -14,7 +14,6 @@ FLTerm * flTermIncrementOutsideVarIds(const FLTerm * const term, const FLTermId 
 
 	switch (term->type){
 
-
 	case FL_TERM_GLOBAL_VAR_ID:
 		return flTermNewGlobalVarId(term->data.varId, env);
 
@@ -30,9 +29,9 @@ FLTerm * flTermIncrementOutsideVarIds(const FLTerm * const term, const FLTermId 
 
 	case FL_TERM_CALL:
 		return flTermNewCall(flTermIncrementOutsideVarIds(term->data.call.func, minToIncrement, incrementOf, env),
-				flTermIncrementOutsideVarIds(term->data.call.arg, minToIncrement, incrementOf, env),
-				term->data.call.isACallByName,
-				env);
+							 flTermIncrementOutsideVarIds(term->data.call.arg, minToIncrement, incrementOf, env),
+							 term->data.call.isACallByName,
+							 env);
 
 
 	case FL_TERM_FUN:
@@ -41,7 +40,31 @@ FLTerm * flTermIncrementOutsideVarIds(const FLTerm * const term, const FLTermId 
 
 	case FL_TERM_LET:
 		return flTermNewLet(flTermIncrementOutsideVarIds(term->data.let.affect, minToIncrement, incrementOf, env),
-				flTermIncrementOutsideVarIds(term->data.let.following, minToIncrement + 1, incrementOf, env), env);
+							flTermIncrementOutsideVarIds(term->data.let.following, minToIncrement + 1, incrementOf, env), env);
+
+	case FL_TERM_INTEGER:
+		return flTermNewInteger(term->data.integer, env);
+
+	case FL_TERM_IF_ELSE:
+		return flTermNewIfElse(flTermIncrementOutsideVarIds(term->data.ifElse.condition, minToIncrement, incrementOf, env),
+							   flTermIncrementOutsideVarIds(term->data.ifElse.thenValue, minToIncrement, incrementOf, env),
+							   flTermIncrementOutsideVarIds(term->data.ifElse.elseValue, minToIncrement, incrementOf, env),
+							   env);
+
+	case FL_TERM_OPCALL:{
+
+		size_t nbArgs = term->data.opCall.nbArguments;
+		FLTerm ** argumentsCopy;
+		FL_SIMPLE_ALLOC(argumentsCopy, nbArgs);
+
+		for (size_t i = 0 ; i < nbArgs ; i++){
+			argumentsCopy[i] = flTermIncrementOutsideVarIds(term->data.opCall.arguments[i], minToIncrement, incrementOf, env);
+		}
+
+		return flTermNewOpCall(term->data.opCall.op, nbArgs, argumentsCopy, env);
+	}
+
+
 
 	default:
 		break;
@@ -80,9 +103,9 @@ FLTerm * flTermReplaceIdByArg(const FLTerm * const body, const FLTermId idToRepl
 
 	case FL_TERM_CALL:
 		return flTermNewCall(flTermReplaceIdByArg(body->data.call.func, idToReplace, arg, env),
-							 flTermReplaceIdByArg(body->data.call.arg, idToReplace, arg, env),
-							 body->data.call.isACallByName,
-							 env);
+				flTermReplaceIdByArg(body->data.call.arg, idToReplace, arg, env),
+				body->data.call.isACallByName,
+				env);
 
 	case FL_TERM_FUN:
 		return flTermNewFun(flTermReplaceIdByArg(body->data.funBody, idToReplace + 1, arg, env), env);
@@ -90,8 +113,30 @@ FLTerm * flTermReplaceIdByArg(const FLTerm * const body, const FLTermId idToRepl
 
 	case FL_TERM_LET:
 		return flTermNewLet(flTermReplaceIdByArg(body->data.let.affect, idToReplace, arg, env),
-							flTermReplaceIdByArg(body->data.let.following, idToReplace + 1, arg, env),
-							env);
+				flTermReplaceIdByArg(body->data.let.following, idToReplace + 1, arg, env),
+				env);
+
+	case FL_TERM_INTEGER:
+		return flTermNewInteger(body->data.integer, env);
+
+	case FL_TERM_IF_ELSE:
+		return flTermNewIfElse(flTermReplaceIdByArg(body->data.ifElse.condition, idToReplace, arg, env),
+							   flTermReplaceIdByArg(body->data.ifElse.thenValue, idToReplace, arg, env),
+							   flTermReplaceIdByArg(body->data.ifElse.elseValue, idToReplace, arg, env),
+							   env);
+
+	case FL_TERM_OPCALL:{
+
+		size_t nbArgs = body->data.opCall.nbArguments;
+		FLTerm ** argumentsCopy;
+		FL_SIMPLE_ALLOC(argumentsCopy, nbArgs);
+
+		for (size_t i = 0 ; i < nbArgs ; i++){
+			argumentsCopy[i] = flTermReplaceIdByArg(body->data.opCall.arguments[i], idToReplace, arg, env);
+		}
+
+		return flTermNewOpCall(body->data.opCall.op, nbArgs, argumentsCopy, env);
+	}
 
 
 	default:
@@ -194,7 +239,185 @@ FLTerm * flTermEvaluationCall(const FLTerm * const call, FLEnvironment * const e
 
 
 
+FLTerm * flTermApplyOp(FlTokenOperatorData const op, size_t const nbArguments, const long long int * const arguments, FLEnvironment * const env){
 
+	switch (op){
+
+	case FL_OPERATOR_PLUS:{
+
+		long long int output = 0;
+
+		for (size_t i = 0 ; i < nbArguments ; i++){
+			output += arguments[i];
+		}
+
+		return flTermNewInteger(output, env);
+	}
+
+
+	case FL_OPERATOR_MINUS:{
+
+		long long int output = arguments[0];
+
+		for (size_t i = 1 ; i < nbArguments ; i++){
+			output -= arguments[i];
+		}
+
+		return flTermNewInteger(output, env);
+	}
+
+	case FL_OPERATOR_TIMES:{
+		long long int output = 1;
+
+		for (size_t i = 0 ; i < nbArguments ; i++){
+			output *= arguments[i];
+		}
+
+		return flTermNewInteger(output, env);
+	}
+
+	case FL_OPERATOR_DIV:{
+		long long int output = arguments[0];
+
+		for (size_t i = 1 ; i < nbArguments ; i++){
+			output /= arguments[i];
+		}
+
+		return flTermNewInteger(output, env);
+	}
+
+	case FL_OPERATOR_MOD:{
+		long long int output = arguments[0];
+
+		for (size_t i = 1 ; i < nbArguments ; i++){
+			output = output % arguments[i];
+		}
+
+		return flTermNewInteger(output, env);
+	}
+
+	case FL_OPERATOR_EQ:{
+
+		for (size_t i = 1 ; i < nbArguments ; i++){
+			if (arguments[i] != arguments[0]){
+				return flTermNewInteger(0, env);
+			}
+		}
+
+		return flTermNewInteger(1, env);
+	}
+
+	case FL_OPERATOR_LT:{
+
+		for (size_t i = 1 ; i < nbArguments ; i++){
+			if (!(arguments[i-1] < arguments[i])){
+				return flTermNewInteger(0, env);
+			}
+		}
+
+		return flTermNewInteger(1, env);
+	}
+
+	case FL_OPERATOR_LEQ:{
+
+		for (size_t i = 1 ; i < nbArguments ; i++){
+			if (!(arguments[i-1] <= arguments[i])){
+				return flTermNewInteger(0, env);
+			}
+		}
+
+		return flTermNewInteger(1, env);
+	}
+
+	case FL_OPERATOR_GT:{
+
+		for (size_t i = 1 ; i < nbArguments ; i++){
+			if (!(arguments[i-1] > arguments[i])){
+				return flTermNewInteger(0, env);
+			}
+		}
+
+		return flTermNewInteger(1, env);
+	}
+
+	case FL_OPERATOR_GEQ:{
+
+		for (size_t i = 1 ; i < nbArguments ; i++){
+			if (!(arguments[i-1] >= arguments[i])){
+				return flTermNewInteger(0, env);
+			}
+		}
+
+		return flTermNewInteger(1, env);
+	}
+
+	default:
+		return NULL;
+	}
+}
+
+
+FLTerm * flTermEvaluationOpCall(const FLTerm * const call, FLEnvironment * const env)
+{
+	size_t nbArguments = call->data.opCall.nbArguments;
+	FLTerm ** evaluatedArguments;
+	FL_SIMPLE_ALLOC(evaluatedArguments, nbArguments);
+	int allIsInteger = 1;
+
+	size_t i;
+
+	for (i = 0 ; i < nbArguments ; i++){
+
+		evaluatedArguments[i] = flTermEvaluation(call->data.opCall.arguments[i], env);
+
+		if (evaluatedArguments[i] == NULL){
+			goto INVALID;
+		}
+
+		if (evaluatedArguments[i]->type != FL_TERM_INTEGER){
+			allIsInteger = 0;
+		}
+	}
+
+	FlTokenOperatorData op = call->data.opCall.op;
+	FLTerm * output;
+
+	if (allIsInteger){
+
+		long long int * integerList;
+		FL_SIMPLE_ALLOC(integerList, nbArguments);
+
+		for (size_t i = 0 ; i < nbArguments ; i++){
+			integerList[i] = evaluatedArguments[i]->data.integer;
+			flTermFree(evaluatedArguments[i], env);
+		}
+
+		free(evaluatedArguments);
+		output = flTermApplyOp(op, nbArguments, integerList, env);
+		free(integerList);
+
+	} else {
+
+		output = flTermNewOpCall(op, nbArguments, evaluatedArguments, env);
+
+		if (output == NULL){
+			goto INVALID;
+		}
+	}
+
+	return output;
+
+	INVALID:{
+
+		for (size_t j = 0 ; j < i ; j++){
+			flTermFree(evaluatedArguments[j], env);
+		}
+
+		free(evaluatedArguments);
+
+		return NULL;
+	}
+}
 
 
 FLTerm * flTermEvaluationLet(const FLTerm * const let, FLEnvironment * const env)
@@ -236,6 +459,39 @@ FLTerm * flTermEvaluationFun(const FLTerm * const fun, FLEnvironment * const env
 }
 
 
+
+FLTerm * flTermEvaluationIfElse(const FLTerm * const ifElse, FLEnvironment * const env)
+{
+	FLTerm * evaluatedCondition = flTermEvaluation(ifElse->data.ifElse.condition, env);
+
+	if (evaluatedCondition == NULL){
+		return NULL;
+	}
+
+	if (evaluatedCondition->type != FL_TERM_INTEGER){
+		return flTermNewIfElse(evaluatedCondition,
+				flTermCopy(ifElse->data.ifElse.thenValue, env),
+				flTermCopy(ifElse->data.ifElse.elseValue, env),
+				env);
+	}
+
+	FLTerm * termToEvaluate;
+
+	if (evaluatedCondition->data.integer){
+		termToEvaluate = ifElse->data.ifElse.thenValue;
+	} else {
+		termToEvaluate = ifElse->data.ifElse.elseValue;
+	}
+
+	flTermFree(evaluatedCondition, env);
+
+	return flTermEvaluation(termToEvaluate, env);
+}
+
+
+
+
+
 FLTerm * flTermEvaluation(const FLTerm * const term, FLEnvironment * const env)
 {
 	if (term == NULL){
@@ -248,7 +504,8 @@ FLTerm * flTermEvaluation(const FLTerm * const term, FLEnvironment * const env)
 		return flTermNewVarId(term->data.varId, env);
 
 	case FL_TERM_GLOBAL_VAR_ID:
-		return flTermNewGlobalVarId(term->data.varId, env);
+		// return flTermNewGlobalVarId(term->data.varId, env);
+		return flTermEvaluation(env->globalTerms[term->data.varId], env);
 
 	case FL_TERM_FUN:
 		return flTermEvaluationFun(term, env);
@@ -258,6 +515,15 @@ FLTerm * flTermEvaluation(const FLTerm * const term, FLEnvironment * const env)
 
 	case FL_TERM_LET:
 		return flTermEvaluationLet(term, env);
+
+	case FL_TERM_INTEGER:
+		return flTermNewInteger(term->data.integer, env);
+
+	case FL_TERM_OPCALL:
+		return flTermEvaluationOpCall(term, env);
+
+	case FL_TERM_IF_ELSE:
+		return flTermEvaluationIfElse(term, env);
 
 	default:
 		break;

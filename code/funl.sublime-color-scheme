@@ -4,9 +4,10 @@
 	},
 	"globals": {
 		"foreground": "rgb(59,13,26)",
-		"background": "rgb(255,237,241)",
+		"background": "rgb(255, 245, 249)", // "rgb(255,237,241)",
 		"accent": "",
 		"selection": "pink",
+		// "font_style": "bold"
 	},
 	"rules": [
 		{
@@ -20,22 +21,25 @@
 			"font_style": "italic"
 		},
 		{
-			"scope": "myscope",
-			"foreground": "red",
-		},
-		{
 			"scope": "keyword",
 			"foreground": "purple",
 			"font_style": "bold"
 		},
 		{
-			"scope": "constant",
-			"foreground": "",
+			"scope": "variables",
+			"foreground": "rgb(59,13,26)",
+			// "font_style": "italic"
+		},
+		{
+			"scope": "operators",
+			// "foreground": "black",
+			"font_style": "bold",
 		},
 		{
 			"scope": "unmatchedbracket",
 			"foreground": "white",
 			"background": "red",
+			"font_style": "bold"
 		},
 		{
 			"scope": "brackets",
@@ -44,13 +48,13 @@
 		},
 		{
 			"scope": "squaredbrackets",
-			"foreground":  "rgb(153,82,31)",
+			"foreground": "rgb(110,80,0)",
 			"font_style" : "bold"
 		},
 		{
 			"scope": "semicolon",
 			"foreground": "purple",
-			// "font_style" : "bold"
+			"font_style" : "bold"
 		}
 	]
 }

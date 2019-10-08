@@ -1,0 +1,409 @@
+let rec pgcd
+	fun (a b)
+		if (== b 0)
+			a
+		else
+			(pgcd b (% a b))
+		end
+;
+		
+
+
+let min-int
+	fun (a b)
+		if (> a b)
+			b
+		else
+			a
+		end
+;
+
+
+let max-int
+	fun (a b)
+		if (> a b)
+			a
+		else
+			b
+		end
+;
+
+
+#
+		COUPLES
+#
+
+
+
+let cons
+	fun (x y f)
+		[f x y];
+		
+let fst
+	fun (c)
+		(c (fun (x y) x));
+		
+let snd
+	fun (c)
+		(c (fun (x y) y));
+		
+
+#
+		LISTS
+#
+		
+
+let </>
+	fun (x) 1
+;
+
+let isempty?
+	fun (l)
+		(l (fun (x y) 0))
+;
+
+
+let head fst;
+
+
+let tail
+	fun (l)
+		if (isempty? l)
+			</>
+		else
+			(snd l)
+		end
+;
+		
+		
+let rec foldl
+	fun (f l b)
+		if (isempty? l)
+			b
+		else
+			(f (head l) (foldl f (tail l) b))
+		end
+;
+		
+		
+
+let rec foldr
+	fun (f l b)
+		if (isempty? l)
+			b
+		else
+			(foldr f (tail l) (f (head l) b))
+		end
+;
+		
+			
+let rec map
+	fun (f l)
+		if (isempty? l)
+			</>
+		else
+			(cons (f (head l)) 
+				  (map f (tail l))
+			)
+		end
+;
+
+
+let rec apply
+	fun (f l)
+		if (isempty? l)
+			f
+		else
+			(apply (f (head l)) (tail l))
+		end
+;
+
+
+let concat
+	fun (l1 l2)
+		(foldl cons l1 l2)
+;
+
+		
+let reverse
+	fun (l)
+		(foldr cons l </>)
+;
+		
+		
+let rec append
+	fun (x l)
+		if (isempty? l)
+			(cons x </>)
+		else
+			(cons (head l) (append x (tail l)))
+		end
+;
+
+
+		
+	
+let rec insert
+	fun (less-or-equal? x l)
+		if (isempty? l)
+			(cons x </>)
+		else
+			let y 
+				(head l)
+			in
+			if (less-or-equal? x y)
+				(cons x l)
+			else
+				(cons y (insert less-or-equal? x (tail l)))
+			end
+		end
+;	
+	
+
+let rec range
+	fun (n)
+		if (<= n 0)
+			</>
+		else
+			(append (- n 1) (range (- n 1)))
+		end
+;
+
+
+	
+let rec insertion-sort
+	fun (less-or-equal? l)
+		if (isempty? l)
+			</>
+		else
+			(insert less-or-equal? 
+					(head l) 
+					(insertion-sort less-or-equal? (tail l))
+			)
+		end
+;
+
+
+
+let or
+	fun (b1 b2)
+		if b1
+			1
+		else
+			b2
+		end
+;
+
+
+let rec fusion
+	#
+		Fusions two sorted lists into a new sorted list
+	#
+	fun (less-or-equal? l1 l2)
+
+		if [or (isempty? l1) (isempty? l2)]
+			(concat l1 l2)
+		else
+			let x1 (head l1) in
+			let x2 (head l2) in
+
+			if (less-or-equal? x1 x2)
+				(cons x1 (fusion less-or-equal? (tail l1) l2))
+			else
+				(cons x2 (fusion less-or-equal? l1 (tail l2)))
+			end
+		end
+;
+
+
+let rec split-in-two
+	fun (l l1 l2)
+		if (isempty? l)
+			(cons l1 l2)
+		else
+			(split-in-two (tail l) l2 (cons (head l) l1))
+		end
+;
+
+
+let rec fusion-sort
+	fun (less-or-equal? l)
+		if [or (isempty? l) (isempty? (tail l))]
+			l
+		else
+			let splitted-l 
+				(split-in-two l </> </>)
+			in
+			(fusion less-or-equal? 
+					(fusion-sort less-or-equal? (fst splitted-l))
+					(fusion-sort less-or-equal? (snd splitted-l))
+			)
+		end
+;
+
+
+
+#
+		TREE
+#
+
+
+let isempty-node?
+	fun (n)
+		(n (fun (x y z) 0))
+;
+
+
+let node 
+	fun (left-son value right-son f)
+		[f left-son value right-son]
+;
+
+let node-value
+	fun (n)
+		(n (fun (x y z) y))
+;
+
+let node-left-son
+	fun (n)
+		(n (fun (x y z) x))
+;
+
+let node-right-son
+	fun (n)
+		(n (fun (x y z) z))
+;
+
+
+
+let rec tree-height
+	fun (t)
+		if (isempty-node? t)
+			0
+		else
+			(+ 1
+				(max-int (tree-height (node-left-son t)) 
+						 (tree-height (node-right-son t))
+				)
+			)
+		end
+;
+
+
+let rec tree-size
+	fun (t)
+		if (isempty-node? t)
+			0
+		else
+			(+ 1
+				(tree-size (node-left-son t))
+				(tree-size (node-right-son t))
+			)
+		end
+;
+
+
+
+
+let rec tree-map
+	fun (f t)
+		if (isempty-node? t)
+			</>
+		else
+			(node (tree-map f (node-left-son t))
+				  (f (node-value t))
+				  (tree-map f (node-right-son t))
+			)
+		end
+;
+
+
+let rec tree-filter
+	fun (condition? t)
+		if (isempty-node? t)
+			</>
+		else
+			let x (node-value t) in
+
+			if (condition? x)
+				(node (tree-filter condition? (node-left-son t))
+					   x
+					   (tree-filter condition? (node-right-son t))
+				)
+			else
+				</>
+			end
+		end
+;
+
+
+
+
+let insertion-sort-int (insertion-sort (fun (x y) (<= x y)));
+let fusion-sort-int (fusion-sort (fun (x y) (<= x y)));
+
+
+
+let and
+	fun (b1 b2)
+		if b1
+			b2
+		else
+			0
+		end
+;
+
+let all-of
+	fun (l)
+		(foldl and l 1)
+;
+
+let any-of
+	fun (l)
+		(foldl or l 0)
+;
+
+
+let not
+	fun (b)
+		if b
+			0
+		else
+			1
+		end
+;
+
+let isprime?
+	fun (n)
+		if (<= n 1)
+			0
+		else
+			let divides-n
+				fun (k) (== 0 (% n (+ k 2)))
+			in
+			(not (any-of (map divides-n (range (- n 2)))))
+		end
+;
+
+
+let rec filter
+	fun (condition? l)
+		if (isempty? l)
+			</>
+		else 
+			let x (head l) in
+
+			if (condition? x)
+				(cons x (filter condition? (tail l)))
+			else
+				(filter condition? (tail l))
+			end
+		end
+;
+
+
+
+(filter isprime? (range 50))
+
+
+

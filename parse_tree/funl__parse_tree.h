@@ -18,7 +18,9 @@ typedef enum {
 	FL_PARSE_TREE_INTEGER,
 	FL_PARSE_TREE_CALL,
 	FL_PARSE_TREE_FUN,
-	FL_PARSE_TREE_LET
+	FL_PARSE_TREE_LET,
+	FL_PARSE_TREE_OP,
+	FL_PARSE_TREE_IF_ELSE
 
 } FLParseTreeType;
 
@@ -62,6 +64,16 @@ typedef struct {
 
 
 
+typedef struct {
+
+	FLParseTree * condition;
+	FLParseTree * thenValue;
+	FLParseTree * elseValue;
+
+} FLParseTreeIfElseData;
+
+
+
 
 
 
@@ -76,6 +88,8 @@ struct FLParseTree {
 		FLParseTreeCallData call;
 		FLParseTreeFunData fun;
 		FLParseTreeLetData let;
+		FlTokenOperatorData op;
+		FLParseTreeIfElseData ifElse;
 
 	} data;
 
@@ -106,10 +120,13 @@ void flParseTreeFree(FLParseTree * tree);
 
 
 FLParseTree * flParseTreeNewVar(char * name);
+FLParseTree * flParseTreeNewOp(FlTokenOperatorData const op);
 FLParseTree * flParseTreeNewInteger(long long int integer);
 FLParseTree * flParseTreeNewCall(FLParseTree * func, size_t nbArguments, FLParseTree ** args, int isACallByName);
 FLParseTree * flParseTreeNewFun(size_t nbParameters, char ** params, FLParseTree * body);
 FLParseTree * flParseTreeNewLet(char * variable, FLParseTree * affectExpr, FLParseTree * followingExpr, int recursive);
+
+FLParseTree * flParseTreeNewIfElse(FLParseTree * condition, FLParseTree * thenValue, FLParseTree * elseValue);
 FLParseTree * flParseTreeNewEndOfFile();
 
 

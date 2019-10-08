@@ -34,9 +34,65 @@ FLTerm * flTermFromParseTreeVar(const FLParseTree * const var, FLEnvironment * c
 
 
 
+FLTerm * flTermFromParseTreeOpCall(const FLParseTree * const call, FLEnvironment * const env)
+{
+	size_t nbArguments = call->data.call.nbArguments;
+	FlTokenOperatorData op = call->data.call.function->data.op;
+
+	if (nbArguments == 0){
+		/*
+		 * TODO : number of arguments can be checked depending on the operator
+		 */
+		return NULL;
+	}
+
+	FLTerm ** arguments;
+	FL_SIMPLE_ALLOC(arguments, nbArguments);
+
+	/*
+	 * TODO : add in freeterm arguments free
+	 */
+
+	size_t i = 0;
+
+	for (i = 0 ; i < nbArguments ; i++){
+
+		arguments[i] = flTermFromParseTree(call->data.call.arguments[i], env);
+
+		if (arguments[i] == NULL){
+			goto INVALID;
+		}
+	}
+
+	FLTerm * output =  flTermNewOpCall(op, nbArguments, arguments, env);
+
+	if (output == NULL){
+		goto INVALID;
+	}
+
+	return output;
+
+
+	INVALID:{
+		for (size_t j = 0 ; j < i ; j++){
+			flTermFree(arguments[j], env);
+		}
+
+		free(arguments);
+
+		return NULL;
+	}
+}
+
+
+
 
 FLTerm * flTermFromParseTreeCall(const FLParseTree * const call, FLEnvironment * const env)
 {
+	if (call->data.call.function->type == FL_PARSE_TREE_OP){
+		return flTermFromParseTreeOpCall(call, env);
+	}
+
 	FLTerm * output = flTermFromParseTree(call->data.call.function, env);
 
 	if (output == NULL){
@@ -91,7 +147,7 @@ FLTerm * flTermFromParseTreeLet(const FLParseTree * const let, FLEnvironment * c
 	/*
 	 * TODO : if let->data.let.recursive
 	 * TODO : if let has not 'in'
-	*/
+	 */
 
 	FLTerm * affect = flTermFromParseTree(let->data.let.affect, env);
 
@@ -113,6 +169,34 @@ FLTerm * flTermFromParseTreeLet(const FLParseTree * const let, FLEnvironment * c
 	}
 
 	return flTermNewLet(affect, following, env);
+}
+
+
+
+FLTerm * flTermFromParseTreeIfElse(const FLParseTree * const tree, FLEnvironment * const env)
+{
+	FLTerm * condition = flTermFromParseTree(tree->data.ifElse.condition, env);
+
+	if (condition == NULL){
+		return NULL;
+	}
+
+	FLTerm * thenValue = flTermFromParseTree(tree->data.ifElse.thenValue, env);
+
+	if (thenValue == NULL){
+		flTermFree(condition, env);
+		return NULL;
+	}
+
+	FLTerm * elseValue = flTermFromParseTree(tree->data.ifElse.elseValue, env);
+
+	if (elseValue == NULL){
+		flTermFree(condition, env);
+		flTermFree(thenValue, env);
+		return NULL;
+	}
+
+	return flTermNewIfElse(condition, thenValue, elseValue, env);
 }
 
 
@@ -139,6 +223,9 @@ FLTerm * flTermFromParseTree(const FLParseTree * const tree, FLEnvironment * con
 
 	case FL_PARSE_TREE_LET:
 		return flTermFromParseTreeLet(tree, env);
+
+	case FL_PARSE_TREE_IF_ELSE:
+		return flTermFromParseTreeIfElse(tree, env);
 
 	default:
 		break;
