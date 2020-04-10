@@ -46,6 +46,7 @@ int flEvaluateAndPrintExpression(const FLParseTree * const tree, FLEnvironment *
 {
 	FLTerm * evaluatedTerm = flTermEvaluationFromParseTree(tree, env);
 
+
 	if (evaluatedTerm == NULL){
 		fprintf(stderr, "ERROR\n");
 		return EXIT_FAILURE;
@@ -56,6 +57,8 @@ int flEvaluateAndPrintExpression(const FLParseTree * const tree, FLEnvironment *
 	printf("\nOutput term:\t");
 	flTermPrint(evaluatedTerm, env);
 	printf("\n\n");
+
+	flTermSaveToDotFile(evaluatedTerm, "evaluated_term.dot");
 
 	flTermFree(evaluatedTerm, env);
 

@@ -23,5 +23,18 @@
 	}\
 
 
+#define FL_FLAG_SET(value, flags)\
+	do  {\
+		(value) |= (flags);\
+	} while (0)
+
+#define FL_FLAG_UNSET(value, flags)\
+	do  {\
+		(value) &= ~(flags);\
+	} while (0)
+
+#define FL_FLAG_IS_SET(value, flags) ((value) & (flags))
+
+
 
 #endif /* FUNL__UTILS_H_ */

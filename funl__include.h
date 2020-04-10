@@ -27,4 +27,6 @@
 #include "file_evaluation/funl__file_evaluation.h"
 
 
+#include "term/funl__shared_term.h"
+
 #endif /* FUNL__INCLUDE_H_ */

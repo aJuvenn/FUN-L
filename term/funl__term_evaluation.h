@@ -106,7 +106,7 @@ typedef struct {
 } FLEnvironment;
 
 
-
+int flTermSaveToDotFile(const FLTerm * term, const char * const outputPath);
 
 FLTerm * flTermNewVarId(FLTermId id, FLEnvironment * const env);
 FLTerm * flTermNewInteger(long long int integer, FLEnvironment * const env);
