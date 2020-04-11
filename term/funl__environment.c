@@ -10,20 +10,25 @@
 
 
 FLEnvironment * flEnvironmentNew(const size_t maximumNbGlobalVar,
-								 const size_t maximumVarNameStackSize,
+								 const size_t maximumNbLocalVar,
 								 const size_t allocatedTermPoolSize)
 {
 	FLEnvironment * output;
-
 	FL_SIMPLE_ALLOC(output, 1);
-	FL_SIMPLE_ALLOC(output->varNameStack, maximumVarNameStackSize);
-	FL_SIMPLE_ALLOC(output->globalTerms, maximumNbGlobalVar);
+
+	FL_SIMPLE_ALLOC(output->localVarNameStack, maximumNbLocalVar);
+	FL_SIMPLE_ALLOC(output->localTermStack, maximumNbLocalVar);
+
 	FL_SIMPLE_ALLOC(output->globalVarNames, maximumNbGlobalVar);
+	FL_SIMPLE_ALLOC(output->globalTerms, maximumNbGlobalVar);
+
 	FL_SIMPLE_ALLOC(output->allocatedTermPool, allocatedTermPoolSize);
 	FL_SIMPLE_ALLOC(output->availableTerms, allocatedTermPoolSize);
 
-	output->varNameStackSize = 0;
+	output->localVarStackSize = 0;
+	output->maxLocalVarStackSize = maximumNbLocalVar;
 	output->nbGlobalVar = 0;
+	output->maxNbGlobalVar = maximumNbGlobalVar;
 
 	output->nbAvailableTerms = allocatedTermPoolSize;
 
@@ -44,9 +49,11 @@ void flEnvironmentFree(FLEnvironment * env)
 		free(env->globalVarNames[i]);
 	}
 
-	free(env->varNameStack);
-	free(env->globalTerms);
+	free(env->localVarNameStack);
+	free(env->localTermStack);
+
 	free(env->globalVarNames);
+	free(env->globalTerms);
 
 	free(env->allocatedTermPool);
 	free(env->availableTerms);
@@ -55,120 +62,61 @@ void flEnvironmentFree(FLEnvironment * env)
 }
 
 
-
-FLTerm * flGetTermFromGlobalId(const FLTermId id, FLEnvironment * const env)
+FLSharedTerm * flEnvironmentSharedTermFromVarName(const FLEnvironment * const env, const char * const varName)
 {
-	if (id >= env->nbGlobalVar){
-		return NULL;
+	/* Seeking for a local variable */
+	for (size_t i = env->localVarStackSize ; i > 0  ; i--){
+		if (strcmp(varName, env->localVarNameStack[i-1]) == 0){
+			return env->localTermStack[i-1];
+		}
 	}
 
-	return flTermCopy(env->globalTerms[id], env);
+	/* Seeking for a global variable */
+	for (size_t i = env->nbGlobalVar ; i > 0 ; i--){
+		if (strcmp(varName, env->globalVarNames[i-1]) == 0){
+			return env->globalTerms[i-1];
+		}
+	}
+
+	return NULL;
+}
+
+int flEnvironmentPushLocalVar(FLEnvironment * const env, const char * const varName, FLSharedTerm * const term)
+{
+	if (env->localVarStackSize == env->maxLocalVarStackSize){
+		return EXIT_FAILURE;
+	}
+
+	env->localVarNameStack[env->localVarStackSize] = strdup(varName);
+	FL_SHARED_TERM_SET_REFERENCE(env->localTermStack[env->localVarStackSize], term);
+	env->localVarStackSize++;
+
+	return EXIT_SUCCESS;
 }
 
 
-
-FLTermId flTermIdFromVarName(const char * const varName, const FLEnvironment * const env)
+void flEnvironmentPopLocalVar(FLEnvironment * const env, const size_t nbVariables)
 {
-	for (size_t i = 0 ; i < env->varNameStackSize ; i++){
-		if (strcmp(varName, env->varNameStack[env->varNameStackSize - i-1]) == 0){
-			return (FLTermId) i;
-		}
+	for (size_t i = env->localVarStackSize ; i > 0 ; i--){
+		FL_SHARED_TERM_REMOVE_REFERENCE(env->localTermStack[i-1], env);
+		free(env->localVarNameStack[i-1]);
 	}
 
-	return (FLTermId) -1;
+	env->localVarStackSize -= nbVariables;
 }
 
 
-FLTermId flGlobalIdFromName(const char * const globalVarName, const FLEnvironment * const env)
+int flEnvironmentAddGlobalVar(FLEnvironment * const env, const char * const varName, FLSharedTerm * const term)
 {
-	for (size_t i = 0 ; i < env->nbGlobalVar ; i++){
-		if (strcmp(globalVarName, env->globalVarNames[i]) == 0){
-			return (FLTermId) i;
-		}
+	if (env->nbGlobalVar == env->maxNbGlobalVar){
+		return EXIT_FAILURE;
 	}
 
-	return (FLTermId) -1;
-}
+	env->globalVarNames[env->nbGlobalVar] = strdup(varName);
+	FL_SHARED_TERM_SET_REFERENCE(env->globalTerms[env->nbGlobalVar], term);
+	env->nbGlobalVar++;
 
-
-
-extern const char *flOperators[];
-
-void flTermPrint(const FLTerm * const term, const FLEnvironment * const env)
-{
-	if (term == NULL){
-		printf("(NULL)");
-		return;
-	}
-
-	switch (term->type){
-
-	case FL_TERM_VAR_ID:
-		printf("$%u", term->data.varId);
-		return;
-
-	case FL_TERM_INTEGER:
-		printf("%lld", term->data.integer);
-		return;
-
-	case FL_TERM_GLOBAL_VAR_ID:
-
-		if (term->data.varId >= env->nbGlobalVar){
-			printf("<INVALID GLOBAL VARIABLE>");
-			return;
-		}
-
-		printf("'%s'", env->globalVarNames[term->data.varId]);
-		return;
-
-	case FL_TERM_FUN:
-		printf("L.");
-		flTermPrint(term->data.funBody, env);
-		return;
-
-	case FL_TERM_CALL:
-		printf(term->data.call.isACallByName ? "[" : "(");
-		flTermPrint(term->data.call.func, env);
-		printf(" ");
-		flTermPrint(term->data.call.arg, env);
-		printf(term->data.call.isACallByName ? "]" : ")");
-		return;
-
-
-	case FL_TERM_LET:
-		printf("let ");
-		flTermPrint(term->data.let.affect, env);
-		printf(" in ");
-		flTermPrint(term->data.let.following, env);
-		return;
-
-	case FL_TERM_IF_ELSE:
-		printf("if ");
-		flTermPrint(term->data.ifElse.condition, env);
-		printf(" ");
-		flTermPrint(term->data.ifElse.thenValue, env);
-		printf(" else ");
-		flTermPrint(term->data.ifElse.elseValue, env);
-		printf(" end");
-		return;
-
-	case FL_TERM_OPCALL:
-
-		printf("(%s", flOperators[term->data.opCall.op]);
-
-		for (size_t i = 0 ; i < term->data.opCall.nbArguments ; i++){
-			printf(" ");
-			flTermPrint(term->data.opCall.arguments[i], env);
-		}
-
-		printf(")");
-
-		break;
-
-	default:
-		printf("<INVALID TERM>");
-		return;
-	}
+	return EXIT_SUCCESS;
 }
 
 

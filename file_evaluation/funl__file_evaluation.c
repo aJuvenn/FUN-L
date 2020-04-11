@@ -11,31 +11,49 @@
 
 int flEvaluateGlobalDefinition(const FLParseTree * const tree, FLEnvironment * const env)
 {
+	FLSharedTerm * globalVarRef;
+	int ret;
+
 	if (tree->data.let.recursive){
-		env->globalTerms[env->nbGlobalVar] = NULL;
-		env->globalVarNames[env->nbGlobalVar] = strdup(tree->data.let.variable);
-		env->nbGlobalVar++;
+
+		globalVarRef = flSharedTermNewRef(NULL, env);
+
+		if (globalVarRef == NULL){
+			fprintf(stderr, "ERROR\n");
+			return EXIT_FAILURE;
+		}
+
+		ret = flEnvironmentAddGlobalVar(env, tree->data.let.variable, globalVarRef);
+
+		if (ret != EXIT_SUCCESS){
+			fprintf(stderr, "ERROR\n");
+			return ret;
+		}
 	}
 
-	FLTerm * evaluatedTerm = flTermEvaluationFromParseTree(tree->data.let.affect, env);
+	FLSharedTerm * globalTerm = flSharedTermFromParseTree(tree->data.let.affect, env);
 
-	if (evaluatedTerm == NULL){
+	if (globalTerm == NULL){
 		fprintf(stderr, "ERROR\n");
 		return EXIT_FAILURE;
 	}
 
-#ifdef FL_PRINT_GLOBAL_DEFINITIONS
-	printf ("Global var %s : ", tree->data.let.variable);
-	flTermPrint(evaluatedTerm, env);
-	printf ("\n\n");
-#endif
-
 	if (tree->data.let.recursive){
-		env->globalTerms[env->nbGlobalVar - 1] = evaluatedTerm;
+		FL_SHARED_TERM_SET_REFERENCE(globalVarRef->ref, globalTerm);
+		globalTerm = globalVarRef;
 	} else {
-		env->globalTerms[env->nbGlobalVar] = evaluatedTerm;
-		env->globalVarNames[env->nbGlobalVar] = strdup(tree->data.let.variable);
-		env->nbGlobalVar++;
+		ret = flEnvironmentAddGlobalVar(env, tree->data.let.variable, globalTerm);
+		if (ret != EXIT_SUCCESS){
+			fprintf(stderr, "ERROR\n");
+			return ret;
+		}
+	}
+
+	ret = flSharedTermEvaluate(globalTerm, env);
+
+	if (ret != EXIT_SUCCESS){
+		fprintf(stderr, "ERROR\n");
+		return ret;
 	}
 
 	return EXIT_SUCCESS;
@@ -44,23 +62,24 @@ int flEvaluateGlobalDefinition(const FLParseTree * const tree, FLEnvironment * c
 
 int flEvaluateAndPrintExpression(const FLParseTree * const tree, FLEnvironment * const env)
 {
-	FLTerm * evaluatedTerm = flTermEvaluationFromParseTree(tree, env);
+	FLSharedTerm * term = flSharedTermFromParseTree(tree, env);
 
+	if (term == NULL){
+		fprintf(stderr, "ERROR\n");
+		return EXIT_FAILURE;
+	}
 
-	if (evaluatedTerm == NULL){
+	int ret = flSharedTermEvaluate(term, env);
+
+	if (ret != EXIT_SUCCESS){
 		fprintf(stderr, "ERROR\n");
 		return EXIT_FAILURE;
 	}
 
 	printf("Input  expr:\t");
 	flParseTreePrint(tree);
-	printf("\nOutput term:\t");
-	flTermPrint(evaluatedTerm, env);
-	printf("\n\n");
-
-	flTermSaveToDotFile(evaluatedTerm, "evaluated_term.dot");
-
-	flTermFree(evaluatedTerm, env);
+	flSharedTermSaveToPDF(term, "evaluated_term.pdf");
+	flSharedTermFree(term, env);
 
 	return EXIT_SUCCESS;
 }
