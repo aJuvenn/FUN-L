@@ -19,10 +19,11 @@ typedef enum {
 
 	FL_SHARED_TERM_CALL,
 	FL_SHARED_TERM_FUN,
+	FL_SHARED_TERM_VAR,
 	FL_SHARED_TERM_REF,
-	FL_SHARED_TERM_ARGREF,
 	FL_SHARED_TERM_INTEGER,
-	FL_SHARED_TERM_IF_ELSE
+	FL_SHARED_TERM_IF_ELSE,
+	FL_SHARED_TERM_LET
 
 } FLSharedTermType;
 
@@ -34,8 +35,11 @@ typedef enum {
 	FL_SHARED_TERM_STATUS_EVALUATED = (1 << 0),
 	FL_SHARED_TERM_STATUS_BEING_EVALUATED = (1 << 1),
 	FL_SHARED_TERM_STATUS_BEING_DESTROYED = (1 << 2),
-	FL_SHARED_TERM_STATUS_BEING_COPIED = (1 << 3)
+	FL_SHARED_TERM_STATUS_BEING_COPIED = (1 << 3),
 
+	FL_SHARED_TERM_STATUS_SEEKING_PATH = (1 << 4),
+	FL_SHARED_TERM_STATUS_ADDING_PATH = (1 << 5),
+	FL_SHARED_TERM_STATUS_HAS_PATH = (1 << 6)
 
 } FLSharedTermStatus;
 
@@ -50,6 +54,10 @@ struct FLSharedTerm {
 
 	union {
 
+		FLSharedTerm * ref;
+		long long int integer;
+		size_t varId;
+
 		struct {
 			FLSharedTerm * func;
 			FLSharedTerm * arg;
@@ -60,14 +68,17 @@ struct FLSharedTerm {
 			FLSharedTerm * body;
 		} fun;
 
-		FLSharedTerm * ref;
-		long long int integer;
-
 		struct {
 			FLSharedTerm * condition;
 			FLSharedTerm * thenValue;
 			FLSharedTerm * elseValue;
 		} ifElse;
+
+		struct {
+			int isRecursive;
+			FLSharedTerm * affect;
+			FLSharedTerm * following;
+		} let;
 	};
 };
 

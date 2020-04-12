@@ -9,26 +9,24 @@
 
 
 
-FLEnvironment * flEnvironmentNew(const size_t maximumNbGlobalVar,
-								 const size_t maximumNbLocalVar,
-								 const size_t allocatedTermPoolSize)
+
+FLEnvironment * flEnvironmentNew(const size_t maximumNbVariables,
+								 const size_t allocatedTermPoolSize,
+								 const size_t maxExecutionStackSize)
 {
 	FLEnvironment * output;
 	FL_SIMPLE_ALLOC(output, 1);
 
-	FL_SIMPLE_ALLOC(output->localVarNameStack, maximumNbLocalVar);
-	FL_SIMPLE_ALLOC(output->localTermStack, maximumNbLocalVar);
-
-	FL_SIMPLE_ALLOC(output->globalVarNames, maximumNbGlobalVar);
-	FL_SIMPLE_ALLOC(output->globalTerms, maximumNbGlobalVar);
+	FL_SIMPLE_ALLOC(output->varNameStack, maximumNbVariables);
+	FL_SIMPLE_ALLOC(output->varTermStack, maximumNbVariables);
 
 	FL_SIMPLE_ALLOC(output->allocatedTermPool, allocatedTermPoolSize);
 	FL_SIMPLE_ALLOC(output->availableTerms, allocatedTermPoolSize);
 
-	output->localVarStackSize = 0;
-	output->maxLocalVarStackSize = maximumNbLocalVar;
-	output->nbGlobalVar = 0;
-	output->maxNbGlobalVar = maximumNbGlobalVar;
+	FL_SIMPLE_ALLOC(output->executionStack, maxExecutionStackSize);
+
+	output->varStackSize = 0;
+	output->maxVarStackSize = maximumNbVariables;
 
 	output->nbAvailableTerms = allocatedTermPoolSize;
 
@@ -38,6 +36,9 @@ FLEnvironment * flEnvironmentNew(const size_t maximumNbGlobalVar,
 
 	output->maxNbAvailableTerms = allocatedTermPoolSize;
 
+	output->executionStackSize = 0;
+	output->maxExecutionStackSize = maxExecutionStackSize;
+
 	return output;
 }
 
@@ -45,15 +46,10 @@ FLEnvironment * flEnvironmentNew(const size_t maximumNbGlobalVar,
 
 void flEnvironmentFree(FLEnvironment * env)
 {
-	for (size_t i = 0 ; i < env->nbGlobalVar ; i++){
-		free(env->globalVarNames[i]);
-	}
+	flEnvironmentPopVar(env, env->varStackSize);
 
-	free(env->localVarNameStack);
-	free(env->localTermStack);
-
-	free(env->globalVarNames);
-	free(env->globalTerms);
+	free(env->varNameStack);
+	free(env->varTermStack);
 
 	free(env->allocatedTermPool);
 	free(env->availableTerms);
@@ -62,61 +58,71 @@ void flEnvironmentFree(FLEnvironment * env)
 }
 
 
-FLSharedTerm * flEnvironmentSharedTermFromVarName(const FLEnvironment * const env, const char * const varName)
+size_t flEnvironmentVarId(const FLEnvironment * const env, const char * const varName)
 {
 	/* Seeking for a local variable */
-	for (size_t i = env->localVarStackSize ; i > 0  ; i--){
-		if (strcmp(varName, env->localVarNameStack[i-1]) == 0){
-			return env->localTermStack[i-1];
+	for (size_t i = 0 ; i < env->varStackSize ; i++){
+		if (strcmp(varName, env->varNameStack[env->varStackSize-i-1]) == 0){
+			return i;
 		}
 	}
 
-	/* Seeking for a global variable */
-	for (size_t i = env->nbGlobalVar ; i > 0 ; i--){
-		if (strcmp(varName, env->globalVarNames[i-1]) == 0){
-			return env->globalTerms[i-1];
-		}
-	}
-
-	return NULL;
+	return (size_t) -1;
 }
 
-int flEnvironmentPushLocalVar(FLEnvironment * const env, const char * const varName, FLSharedTerm * const term)
+
+int flEnvironmentPushVar(FLEnvironment * const env, const char * const varName, FLSharedTerm * const term)
 {
-	if (env->localVarStackSize == env->maxLocalVarStackSize){
+	if (env->varStackSize == env->maxVarStackSize){
 		return EXIT_FAILURE;
 	}
 
-	env->localVarNameStack[env->localVarStackSize] = strdup(varName);
-	FL_SHARED_TERM_SET_REFERENCE(env->localTermStack[env->localVarStackSize], term);
-	env->localVarStackSize++;
+	env->varNameStack[env->varStackSize] = strdup(varName);
+	FL_SHARED_TERM_SET_REFERENCE(env->varTermStack[env->varStackSize], term);
+	env->varStackSize++;
 
 	return EXIT_SUCCESS;
 }
 
 
-void flEnvironmentPopLocalVar(FLEnvironment * const env, const size_t nbVariables)
+void flEnvironmentPopVar(FLEnvironment * const env, const size_t nbVariables)
 {
-	for (size_t i = env->localVarStackSize ; i > 0 ; i--){
-		FL_SHARED_TERM_REMOVE_REFERENCE(env->localTermStack[i-1], env);
-		free(env->localVarNameStack[i-1]);
+	for (size_t i = 0 ; i < nbVariables ; i++){
+		size_t j = env->varStackSize - 1 - i;
+		FL_SHARED_TERM_REMOVE_REFERENCE(env->varTermStack[j], env);
+		free(env->varNameStack[j]);
 	}
 
-	env->localVarStackSize -= nbVariables;
+	env->varStackSize -= nbVariables;
 }
 
 
-int flEnvironmentAddGlobalVar(FLEnvironment * const env, const char * const varName, FLSharedTerm * const term)
+int flEnvironmentPushExecutionTerm(FLEnvironment * const env, FLSharedTerm * const term)
 {
-	if (env->nbGlobalVar == env->maxNbGlobalVar){
+	if (env->executionStackSize ==  env->maxExecutionStackSize){
 		return EXIT_FAILURE;
 	}
 
-	env->globalVarNames[env->nbGlobalVar] = strdup(varName);
-	FL_SHARED_TERM_SET_REFERENCE(env->globalTerms[env->nbGlobalVar], term);
-	env->nbGlobalVar++;
+	/* TODO : add reference ? */
+	env->executionStack[env->executionStackSize++] = term;
 
 	return EXIT_SUCCESS;
 }
 
+
+void flEnvironmentPopExecutionTerm(FLEnvironment * const env, const size_t nbTerms)
+{
+	/* TODO : remove references ? */
+	env->executionStackSize -= nbTerms;
+}
+
+
+FLSharedTerm * flEnvironmentExecutionTermFromVarId(const FLEnvironment * const env, const size_t varId)
+{
+	if (varId >= env->varStackSize){
+		return NULL;
+	}
+
+	return env->executionStack[env->varStackSize-1 - varId];
+}
 

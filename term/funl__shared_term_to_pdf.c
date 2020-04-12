@@ -81,7 +81,7 @@ void flSharedTermSaveToDotFileRec(const FLSharedTerm * term, FILE * const f)
 	switch (term->type){
 
 	case FL_SHARED_TERM_CALL:
-		fprintf(f, "\"%p\" [color=%s, shape=box, label=%s];\n", term, "red", "call");
+		fprintf(f, "\"%p\" [color=%s, shape=box, label=\"%s [%zu]\"];\n", term, "red", "call", term->nbReferences);
 		fprintf(f, "\"%p\" -> \"%p\" [color=%s, label=\"[%s]\"];\n", term, term->call.func, "red", "func");
 		fprintf(f, "\"%p\" -> \"%p\" [color=%s, label=\"[%s]\"];\n", term, term->call.arg, "red", "arg");
 
@@ -90,14 +90,14 @@ void flSharedTermSaveToDotFileRec(const FLSharedTerm * term, FILE * const f)
 		return;
 
 	case FL_SHARED_TERM_FUN:
-		fprintf(f, "\"%p\" [color=%s, shape=box, label=%s];\n", term, "blue", "fun");
+		fprintf(f, "\"%p\" [color=%s, shape=box, label=\"%s [%zu]\"];\n", term, "blue", "fun", term->nbReferences);
 		fprintf(f, "\"%p\" -> \"%p\" [color=%s, label=\"[%s]\"];\n", term, term->fun.body, "blue", "body");
 
 		flSharedTermSaveToDotFileRec(term->fun.body, f);
 		return;
 
 	case FL_SHARED_TERM_IF_ELSE:
-		fprintf(f, "\"%p\" [color=%s, shape=box, label=\"%s\"];\n", term, "black", "if else");
+		fprintf(f, "\"%p\" [color=%s, shape=box, label=\"%s [%zu]\"];\n", term, "black", "if else", term->nbReferences);
 		fprintf(f, "\"%p\" -> \"%p\" [color=%s, label=\"[%s]\"];\n", term, term->ifElse.condition, "black", "condition");
 		fprintf(f, "\"%p\" -> \"%p\" [color=%s, label=\"[%s]\"];\n", term, term->ifElse.thenValue, "black", "then");
 		fprintf(f, "\"%p\" -> \"%p\" [color=%s, label=\"[%s]\"];\n", term, term->ifElse.elseValue, "black", "else");
@@ -107,22 +107,34 @@ void flSharedTermSaveToDotFileRec(const FLSharedTerm * term, FILE * const f)
 		flSharedTermSaveToDotFileRec(term->ifElse.elseValue, f);
 		return;
 
+	case FL_SHARED_TERM_LET:
+		fprintf(f, "\"%p\" [color=%s, shape=box, label=\"%s [%zu]\"];\n", term, "yellow", term->let.isRecursive ? "let rec" : "let", term->nbReferences);
+		fprintf(f, "\"%p\" -> \"%p\" [color=%s, label=\"[%s]\"];\n", term, term->let.affect, "yellow", "affect");
+		if (term->let.following){
+			fprintf(f, "\"%p\" -> \"%p\" [color=%s, label=\"[%s]\"];\n", term, term->let.following, "yellow", "following");
+		}
+		flSharedTermSaveToDotFileRec(term->let.affect, f);
+		if (term->let.following){
+			flSharedTermSaveToDotFileRec(term->let.following, f);
+		}
+		return;
+
 	case FL_SHARED_TERM_INTEGER:
-		fprintf(f, "\"%p\" [color=%s, shape=box, label=\"%lld\"];\n", term, "green", term->integer);
+		fprintf(f, "\"%p\" [color=%s, shape=box, label=\"%lld [%zu]\"];\n", term, "green", term->integer, term->nbReferences);
 		return;
 
 	case FL_SHARED_TERM_REF:
-		fprintf(f, "\"%p\" [color=%s, shape=box, label=\"%s\"];\n", term, "orange", "ref");
+		fprintf(f, "\"%p\" [color=%s, shape=box, label=\"%s [%zu]\"];\n", term, "orange", "ref", term->nbReferences);
 		fprintf(f, "\"%p\" -> \"%p\" [color=%s, label=\"[%s]\", style=dashed];\n", term, term->ref, "orange", "*");
 		flSharedTermSaveToDotFileRec(term->ref, f);
 		return;
 
-	case FL_SHARED_TERM_ARGREF:
-		fprintf(f, "\"%p\" [color=%s, shape=box, label=\"%s\"];\n", term, "purple", "arg ref");
-		fprintf(f, "\"%p\" -> \"%p\" [color=%s, label=\"[%s]\", style=dashed];\n", term, term->ref, "purple", "*");
+	case FL_SHARED_TERM_VAR:
+		fprintf(f, "\"%p\" [color=%s, shape=box, label=\"var $%zu [%zu]\"];\n", term, "green", term->varId, term->nbReferences);
 		return;
 
 	default:
+		fprintf(f, "\"%p\" [color=%s, shape=box, label=\"%s [%zu]\"];\n", term, "black", "UNKNOWN", term->nbReferences);
 		return;
 	}
 }

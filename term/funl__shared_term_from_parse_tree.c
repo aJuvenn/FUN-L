@@ -101,52 +101,33 @@ FLSharedTerm * flSharedTermFromParseTreeFun(const FLParseTree * const fun, FLEnv
 {
 	size_t nbParameters = fun->data.fun.nbParameters;
 
-	FLSharedTerm * output = NULL;
+	for (size_t i = 0 ; i < nbParameters ; i++){
+
+		int ret = flEnvironmentPushVar(env, fun->data.fun.parameters[i], NULL);
+
+		if (ret != EXIT_SUCCESS){
+			return NULL;
+		}
+	}
+
+	FLSharedTerm * body = flSharedTermFromParseTree(fun->data.fun.body, env);
+
+	if (body == NULL){
+		return NULL;
+	}
+
+	flEnvironmentPopVar(env, nbParameters);
+
+	FLSharedTerm * output = body;
 
 	for (size_t i = 0 ; i < nbParameters ; i++){
 
 		output = flSharedTermNewFun(output, env);
 
 		if (output == NULL){
-			/* TODO */
 			return NULL;
 		}
 	}
-
-	FLSharedTerm * funChainCursor = output;
-
-	for (size_t i = 0 ; i < nbParameters ; i++){
-
-		FLSharedTerm * argRef = flSharedTermNewArgRef(funChainCursor, env);
-
-		if (argRef == NULL){
-			/* TODO */
-			return NULL;
-		}
-
-		int ret = flEnvironmentPushLocalVar(env, fun->data.fun.parameters[i], argRef);
-
-		if (ret != EXIT_SUCCESS){
-			/* TODO */
-			return NULL;
-		}
-
-		if (funChainCursor->fun.body != NULL){
-			/* This way the cursor is the last of the chain after the loop */
-			funChainCursor = funChainCursor->fun.body;
-		}
-	}
-
-	FLSharedTerm * funBody = flSharedTermFromParseTree(fun->data.fun.body, env);
-
-	if (funBody == NULL){
-		/* TODO */
-		return NULL;
-	}
-
-	flEnvironmentPopLocalVar(env, nbParameters);
-
-	FL_SHARED_TERM_SET_REFERENCE(funChainCursor->fun.body, funBody);
 
 	return output;
 }
@@ -154,60 +135,45 @@ FLSharedTerm * flSharedTermFromParseTreeFun(const FLParseTree * const fun, FLEnv
 
 FLSharedTerm * flSharedTermFromParseTreeLet(const FLParseTree * const let, FLEnvironment * const env)
 {
-	/*
-	 * TODO : if let has not 'in'
-	 * TODO : errors
-	 */
+	int isRecursive = let->data.let.recursive;
 	int ret;
 
-	FLSharedTerm * affect;
-	{
-		FLSharedTerm * affectRef;
-
-		if (let->data.let.recursive){
-
-			affectRef = flSharedTermNewRef(NULL, env);
-
-			if (affectRef == NULL){
-				return NULL;
-			}
-
-			ret = flEnvironmentPushLocalVar(env, let->data.let.variable, affectRef);
-			if (ret != EXIT_SUCCESS){
-				return NULL;
-			}
-		}
-
-		affect = flSharedTermFromParseTree(let->data.let.affect, env);
-
-		if (affect == NULL){
+	if (isRecursive){
+		ret = flEnvironmentPushVar(env, let->data.let.variable, NULL);
+		if (ret != EXIT_SUCCESS){
 			return NULL;
 		}
+	}
 
-		if (let->data.let.recursive){
-			FL_SHARED_TERM_SET_REFERENCE(affectRef->ref, affect);
-			affect = affectRef;
-		} else {
-			ret = flEnvironmentPushLocalVar(env, let->data.let.variable, affect);
-			if (ret != EXIT_SUCCESS){
-				return NULL;
-			}
-		}
+	FLSharedTerm * affect = flSharedTermFromParseTree(let->data.let.affect, env);
+
+	if (affect == NULL){
+		return NULL;
 	}
 
 	if (let->data.let.following == NULL){
+		if (isRecursive){
+			flEnvironmentPopVar(env, 1);
+		}
+		return flSharedTermNewLet(affect, NULL, isRecursive, env);
+	}
+
+	if (!isRecursive){
+		ret = flEnvironmentPushVar(env, let->data.let.variable, NULL);
+		if (ret != EXIT_SUCCESS){
+			return NULL;
+		}
+	}
+
+	FLSharedTerm * following = flSharedTermFromParseTree(let->data.let.following, env);
+
+	flEnvironmentPopVar(env, 1);
+
+	if (following == NULL){
 		return NULL;
 	}
 
-	FLSharedTerm * output = flSharedTermFromParseTree(let->data.let.following, env);
-
-	if (output == NULL){
-		return NULL;
-	}
-
-	flEnvironmentPopLocalVar(env, 1);
-
-	return output;
+	return flSharedTermNewLet(affect, following, isRecursive, env);
 }
 
 
@@ -239,6 +205,18 @@ FLSharedTerm * flSharedTermFromParseTreeIfElse(const FLParseTree * const tree, F
 }
 
 
+FLSharedTerm * flSharedTermFromParseTreeVar(const FLParseTree * const tree, FLEnvironment * const env)
+{
+	size_t id = flEnvironmentVarId(env, tree->data.var);
+
+	if (id == (size_t) -1){
+		return NULL;
+	}
+
+	return flSharedTermNewVar(id, env);
+}
+
+
 
 FLSharedTerm * flSharedTermFromParseTree(const FLParseTree * const tree, FLEnvironment * const env)
 {
@@ -258,7 +236,7 @@ FLSharedTerm * flSharedTermFromParseTree(const FLParseTree * const tree, FLEnvir
 		return flSharedTermFromParseTreeFun(tree, env);
 
 	case FL_PARSE_TREE_VAR:
-		return flEnvironmentSharedTermFromVarName(env, tree->data.var);
+		return flSharedTermFromParseTreeVar(tree, env);
 
 	case FL_PARSE_TREE_LET:
 		return flSharedTermFromParseTreeLet(tree, env);

@@ -12,10 +12,13 @@
 
 FLSharedTerm * flSharedTermNewFun(FLSharedTerm * funBody, FLEnvironment * const env);
 FLSharedTerm * flSharedTermNewRef(FLSharedTerm * pointedTerm, FLEnvironment * const env);
-FLSharedTerm * flSharedTermNewArgRef(FLSharedTerm * pointedFun, FLEnvironment * const env);
+FLSharedTerm * flSharedTermNewVar(size_t id, FLEnvironment * const env);
 FLSharedTerm * flSharedTermNewInteger(long long int integer, FLEnvironment * const env);
 FLSharedTerm * flSharedTermNewCall(FLSharedTerm * fun, FLSharedTerm * arg, int isACallByName, FLEnvironment * const env);
 FLSharedTerm * flSharedTermNewIfElse(FLSharedTerm * condition, FLSharedTerm * thenValue, FLSharedTerm * elseValue, FLEnvironment * const env);
+FLSharedTerm * flSharedTermNewLet(FLSharedTerm * affect, FLSharedTerm * following, int isRecursive, FLEnvironment * const env);
+
+
 void flSharedTermFree(FLSharedTerm * term, FLEnvironment * const env);
 
 int flSharedTermSaveToPDF(const FLSharedTerm * term, const char * const outputPath);
@@ -36,6 +39,9 @@ int flSharedTermSaveToPDF(const FLSharedTerm * term, const char * const outputPa
 		do {\
 			FLSharedTerm * const _FL_TMP_REF_TO_REMOVE = (place);\
 			(place) = NULL;\
+			if (_FL_TMP_REF_TO_REMOVE == NULL){\
+				break;\
+			}\
 			if ((_FL_TMP_REF_TO_REMOVE->nbReferences--) == 1){\
 				flSharedTermFree(_FL_TMP_REF_TO_REMOVE, (env));\
 			}\

@@ -48,14 +48,11 @@ FLSharedTerm * flSharedTermNewRef(FLSharedTerm * pointedTerm, FLEnvironment * co
 }
 
 
-FLSharedTerm * flSharedTermNewArgRef(FLSharedTerm * pointedFun, FLEnvironment * const env)
+FLSharedTerm * flSharedTermNewVar(size_t id, FLEnvironment * const env)
 {
 	FLSharedTerm * output = flSharedTermNew(env);
-	output->type = FL_SHARED_TERM_ARGREF;
-	output->status = FL_SHARED_TERM_STATUS_EVALUATED;
-
-	/* Arg ref is not counted as a reference for garbage collector */
-	output->ref = pointedFun;
+	output->type = FL_SHARED_TERM_VAR;
+	output->varId = id;
 
 	return output;
 }
@@ -101,6 +98,18 @@ FLSharedTerm * flSharedTermNewIfElse(FLSharedTerm * condition, FLSharedTerm * th
 }
 
 
+FLSharedTerm * flSharedTermNewLet(FLSharedTerm * affect, FLSharedTerm * following, int isRecursive, FLEnvironment * const env)
+{
+	FLSharedTerm * output = flSharedTermNew(env);
+	output->type = FL_SHARED_TERM_LET;
+
+	output->let.isRecursive = isRecursive;
+	FL_SHARED_TERM_SET_REFERENCE(output->let.affect, affect);
+	FL_SHARED_TERM_SET_REFERENCE(output->let.following, following);
+
+	return output;
+}
+
 
 FLSharedTerm * flSharedTermReferedBy(FLSharedTerm * refTerm)
 {
@@ -144,6 +153,11 @@ void flSharedTermFree(FLSharedTerm * term, FLEnvironment * const env)
 		FL_SHARED_TERM_REMOVE_REFERENCE(term->ifElse.condition, env);
 		FL_SHARED_TERM_REMOVE_REFERENCE(term->ifElse.thenValue, env);
 		FL_SHARED_TERM_REMOVE_REFERENCE(term->ifElse.elseValue, env);
+		break;
+
+	case FL_SHARED_TERM_LET:
+		FL_SHARED_TERM_REMOVE_REFERENCE(term->let.affect, env);
+		FL_SHARED_TERM_REMOVE_REFERENCE(term->let.following, env);
 		break;
 
 	default:

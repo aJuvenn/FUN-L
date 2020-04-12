@@ -9,52 +9,31 @@
 
 #include "../funl__include.h"
 
+
 int flEvaluateGlobalDefinition(const FLParseTree * const tree, FLEnvironment * const env)
 {
-	FLSharedTerm * globalVarRef;
-	int ret;
-
-	if (tree->data.let.recursive){
-
-		globalVarRef = flSharedTermNewRef(NULL, env);
-
-		if (globalVarRef == NULL){
-			fprintf(stderr, "ERROR\n");
-			return EXIT_FAILURE;
-		}
-
-		ret = flEnvironmentAddGlobalVar(env, tree->data.let.variable, globalVarRef);
-
-		if (ret != EXIT_SUCCESS){
-			fprintf(stderr, "ERROR\n");
-			return ret;
-		}
-	}
-
 	FLSharedTerm * globalTerm = flSharedTermFromParseTree(tree->data.let.affect, env);
 
 	if (globalTerm == NULL){
-		fprintf(stderr, "ERROR\n");
+		fprintf(stderr, "ERROR: Couldn't load global term from parse tree\n");
 		return EXIT_FAILURE;
 	}
 
-	if (tree->data.let.recursive){
-		FL_SHARED_TERM_SET_REFERENCE(globalVarRef->ref, globalTerm);
-		globalTerm = globalVarRef;
-	} else {
-		ret = flEnvironmentAddGlobalVar(env, tree->data.let.variable, globalTerm);
-		if (ret != EXIT_SUCCESS){
-			fprintf(stderr, "ERROR\n");
-			return ret;
-		}
-	}
-
-	ret = flSharedTermEvaluate(globalTerm, env);
+	int ret = flEnvironmentPushVar(env, tree->data.let.variable, globalTerm);
 
 	if (ret != EXIT_SUCCESS){
-		fprintf(stderr, "ERROR\n");
+		fprintf(stderr, "ERROR: Couldn't push variable name into parsing environment\n");
 		return ret;
 	}
+
+	FLSharedTerm * evaluatedTerm = flSharedTermEvaluate(globalTerm, env);
+
+	if (evaluatedTerm == NULL){
+		fprintf(stderr, "ERROR: Couldn't evaluate global variable\n");
+		return ret;
+	}
+
+	flEnvironmentPushExecutionTerm(env, evaluatedTerm);
 
 	return EXIT_SUCCESS;
 }
@@ -62,24 +41,30 @@ int flEvaluateGlobalDefinition(const FLParseTree * const tree, FLEnvironment * c
 
 int flEvaluateAndPrintExpression(const FLParseTree * const tree, FLEnvironment * const env)
 {
-	FLSharedTerm * term = flSharedTermFromParseTree(tree, env);
+	FLSharedTerm * term;
+
+	FL_SHARED_TERM_SET_REFERENCE(term, flSharedTermFromParseTree(tree, env));
 
 	if (term == NULL){
-		fprintf(stderr, "ERROR\n");
+		fprintf(stderr, "ERROR: Couldn't load term from parse tree\n");
 		return EXIT_FAILURE;
 	}
 
-	int ret = flSharedTermEvaluate(term, env);
+	flSharedTermSaveToPDF(term, "before_evaluation.pdf");
 
-	if (ret != EXIT_SUCCESS){
-		fprintf(stderr, "ERROR\n");
+
+	FLSharedTerm * evaluatedTerm = flSharedTermEvaluate(term, env);
+
+	if (evaluatedTerm == NULL){
+		fprintf(stderr, "ERROR: Couldn't evaluate term\n");
 		return EXIT_FAILURE;
 	}
 
 	printf("Input  expr:\t");
 	flParseTreePrint(tree);
-	flSharedTermSaveToPDF(term, "evaluated_term.pdf");
-	flSharedTermFree(term, env);
+	flSharedTermSaveToPDF(evaluatedTerm, "after_evaluation.pdf");
+
+	FL_SHARED_TERM_REMOVE_REFERENCE(term, env);
 
 	return EXIT_SUCCESS;
 }

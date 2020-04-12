@@ -10,12 +10,16 @@
 
 #include "../funl__include.h"
 
+
+/*
 int flSharedTermEvaluate(FLSharedTerm * term, FLEnvironment * env);
 int flSharedTermEvaluateOneStep(FLSharedTerm * term, FLEnvironment * env);
+*/
 
 FLSharedTerm * flSharedTermFromParseTree(const FLParseTree * const tree, FLEnvironment * const env);
 
 
+FLSharedTerm * flSharedTermEvaluate(FLSharedTerm * term, FLEnvironment * env);
 
 
 #endif /* TERM_FUNL__EVALUATION_H_ */
