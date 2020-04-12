@@ -56,7 +56,11 @@ struct FLSharedTerm {
 
 		FLSharedTerm * ref;
 		long long int integer;
-		size_t varId;
+
+		struct {
+			size_t id;
+			int isGlobal;
+		} var;
 
 		struct {
 			FLSharedTerm * func;

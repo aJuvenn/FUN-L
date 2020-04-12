@@ -207,13 +207,15 @@ FLSharedTerm * flSharedTermFromParseTreeIfElse(const FLParseTree * const tree, F
 
 FLSharedTerm * flSharedTermFromParseTreeVar(const FLParseTree * const tree, FLEnvironment * const env)
 {
-	size_t id = flEnvironmentVarId(env, tree->data.var);
+	size_t id;
+	int isAGlobalVar;
+	flEnvironmentVarId(env, tree->data.var, &id, &isAGlobalVar);
 
 	if (id == (size_t) -1){
 		return NULL;
 	}
 
-	return flSharedTermNewVar(id, env);
+	return flSharedTermNewVar(id, isAGlobalVar, env);
 }
 
 

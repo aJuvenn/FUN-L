@@ -12,6 +12,18 @@
 
 int flEvaluateGlobalDefinition(const FLParseTree * const tree, FLEnvironment * const env)
 {
+	/* TODO : problem for let rec ? */
+	int ret;
+
+	printf("Global var %s...\n", tree->data.let.variable);
+
+	if (tree->data.let.recursive){
+		ret = flEnvironmentAddGlobalVar(env, tree->data.let.variable, NULL);
+		if (ret != EXIT_SUCCESS){
+			return ret;
+		}
+	}
+
 	FLSharedTerm * globalTerm = flSharedTermFromParseTree(tree->data.let.affect, env);
 
 	if (globalTerm == NULL){
@@ -19,21 +31,22 @@ int flEvaluateGlobalDefinition(const FLParseTree * const tree, FLEnvironment * c
 		return EXIT_FAILURE;
 	}
 
-	int ret = flEnvironmentPushVar(env, tree->data.let.variable, globalTerm);
-
-	if (ret != EXIT_SUCCESS){
-		fprintf(stderr, "ERROR: Couldn't push variable name into parsing environment\n");
-		return ret;
-	}
-
 	FLSharedTerm * evaluatedTerm = flSharedTermEvaluate(globalTerm, env);
 
 	if (evaluatedTerm == NULL){
 		fprintf(stderr, "ERROR: Couldn't evaluate global variable\n");
-		return ret;
+		return EXIT_FAILURE;
 	}
 
-	flEnvironmentPushExecutionTerm(env, evaluatedTerm);
+	if (tree->data.let.recursive){
+		env->globalVarTermStack[env->globalVarStackSize - 1] = evaluatedTerm;
+	} else  {
+		ret = flEnvironmentAddGlobalVar(env, tree->data.let.variable, evaluatedTerm);
+
+		if (ret != EXIT_SUCCESS){
+			return ret;
+		}
+	}
 
 	return EXIT_SUCCESS;
 }
@@ -42,6 +55,9 @@ int flEvaluateGlobalDefinition(const FLParseTree * const tree, FLEnvironment * c
 int flEvaluateAndPrintExpression(const FLParseTree * const tree, FLEnvironment * const env)
 {
 	FLSharedTerm * term;
+	printf("Evaluating expression: ");
+	flParseTreePrint(tree);
+	printf("\n");
 
 	FL_SHARED_TERM_SET_REFERENCE(term, flSharedTermFromParseTree(tree, env));
 
@@ -50,7 +66,7 @@ int flEvaluateAndPrintExpression(const FLParseTree * const tree, FLEnvironment *
 		return EXIT_FAILURE;
 	}
 
-	flSharedTermSaveToPDF(term, "before_evaluation.pdf");
+	flSharedTermSaveToPDF(term, "before_evaluation.pdf", env);
 
 
 	FLSharedTerm * evaluatedTerm = flSharedTermEvaluate(term, env);
@@ -62,7 +78,7 @@ int flEvaluateAndPrintExpression(const FLParseTree * const tree, FLEnvironment *
 
 	printf("Input  expr:\t");
 	flParseTreePrint(tree);
-	flSharedTermSaveToPDF(evaluatedTerm, "after_evaluation.pdf");
+	flSharedTermSaveToPDF(evaluatedTerm, "after_evaluation.pdf", env);
 
 	FL_SHARED_TERM_REMOVE_REFERENCE(term, env);
 

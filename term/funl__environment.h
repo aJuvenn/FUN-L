@@ -10,10 +10,15 @@
 
 typedef struct {
 
-	char ** varNameStack;
-	FLSharedTerm ** varTermStack;
-	size_t varStackSize;
-	size_t maxVarStackSize;
+	char ** localVarNameStack;
+	FLSharedTerm ** localVarTermStack;
+	size_t localVarStackSize;
+	size_t maxLocalVarStackSize;
+
+	char ** globalVarNameStack;
+	FLSharedTerm ** globalVarTermStack;
+	size_t globalVarStackSize;
+	size_t maxGlobalVarStackSize;
 
 	FLSharedTerm * allocatedTermPool;
 	FLSharedTerm ** availableTerms;
@@ -28,22 +33,28 @@ typedef struct {
 
 
 
-FLEnvironment * flEnvironmentNew(const size_t maximumNbVar,
-								 const size_t allocatedTermPoolSize,
-								 const size_t maxExecutionStackSize);
+FLEnvironment * flEnvironmentNew(
+		const size_t maximumNbLocalVar,
+		const size_t maximumNbGlobalVar,
+		const size_t allocatedTermPoolSize,
+		const size_t maxExecutionStackSize);
 
 void flEnvironmentFree(FLEnvironment * env);
 
-size_t flEnvironmentVarId(const FLEnvironment * const env, const char * const varName);
+
+void flEnvironmentVarId(const FLEnvironment * const env, const char * const varName, size_t * out_id, int * out_isGlobal);
 
 int flEnvironmentPushVar(FLEnvironment * const env, const char * const varName, FLSharedTerm * const term);
 void flEnvironmentPopVar(FLEnvironment * const env, const size_t nbVariables);
+int flEnvironmentAddGlobalVar(FLEnvironment * const env, const char * const varName, FLSharedTerm * const term);
+
+
 
 
 int flEnvironmentPushExecutionTerm(FLEnvironment * const env, FLSharedTerm * const term);
 void flEnvironmentPopExecutionTerm(FLEnvironment * const env, const size_t nbTerms);
 
-FLSharedTerm * flEnvironmentExecutionTermFromVarId(const FLEnvironment * const env, const size_t varId);
+FLSharedTerm * flEnvironmentExecutionTermFromVarId(const FLEnvironment * const env, const size_t varId, const int isAGlobalVar);
 
 
 

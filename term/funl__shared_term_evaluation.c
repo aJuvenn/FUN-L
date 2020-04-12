@@ -11,47 +11,188 @@
 #define EXIT_NEED_RECURSIVE_CALL 42
 
 
-
-FLSharedTerm * flSharedTermEvaluate(FLSharedTerm * term, FLEnvironment * env)
+FLSharedTerm * flSharedTermReplaceLocalVar(FLSharedTerm * term, const size_t idToReplace, FLSharedTerm * replacementTerm, FLEnvironment * env)
 {
-	int ret;
-
 	if (term == NULL){
 		return NULL;
 	}
 
-	switch(term->type){
+	switch (term->type){
 
 	case FL_SHARED_TERM_VAR:
-	{
-		FLSharedTerm * correspoundingTerm = flEnvironmentExecutionTermFromVarId(env, term->varId);
 
-		if (correspoundingTerm == NULL){
-			return term;
+		if (term->var.id == idToReplace && !(term->var.isGlobal)){
+			return replacementTerm;
 		}
 
-		return correspoundingTerm;
-	} break;
+		return term;
 
 	case FL_SHARED_TERM_INTEGER:
 		return term;
 
 	case FL_SHARED_TERM_FUN:
 	{
+		FLSharedTerm * body = flSharedTermReplaceLocalVar(term->fun.body, idToReplace + 1, replacementTerm, env);
+
+		if (body == NULL){
+			return NULL;
+		}
+
+		if (body == term->fun.body){
+			return term;
+		}
+
+		return flSharedTermNewFun(body, env);
+	} break;
+
+	case FL_SHARED_TERM_REF:
+		return flSharedTermReplaceLocalVar(term->ref, idToReplace, replacementTerm, env);
+
+	case FL_SHARED_TERM_CALL:
+	{
+		FLSharedTerm * func = flSharedTermReplaceLocalVar(term->call.func, idToReplace, replacementTerm, env);
+
+		if (func == NULL){
+			return NULL;
+		}
+
+		FLSharedTerm * arg = flSharedTermReplaceLocalVar(term->call.arg, idToReplace, replacementTerm, env);
+
+		if (arg == NULL){
+			return NULL;
+		}
+
+		if (func == term->call.func && arg == term->call.arg){
+			return term;
+		}
+
+		return flSharedTermNewCall(func, arg, term->call.isACallByName, env);
+	} break;
+
+	case FL_SHARED_TERM_IF_ELSE:
+	{
+		FLSharedTerm * condition = flSharedTermReplaceLocalVar(term->ifElse.condition, idToReplace, replacementTerm, env);
+
+		if (condition == NULL){
+			return NULL;
+		}
+
+		FLSharedTerm * thenValue = flSharedTermReplaceLocalVar(term->ifElse.thenValue, idToReplace, replacementTerm, env);
+
+		if (thenValue == NULL){
+			return NULL;
+		}
+
+		FLSharedTerm * elseValue = flSharedTermReplaceLocalVar(term->ifElse.elseValue, idToReplace, replacementTerm, env);
+
+		if (elseValue == NULL){
+			return NULL;
+		}
+
+		if (condition == term->ifElse.condition
+				&& thenValue == term->ifElse.thenValue
+				&& elseValue == term->ifElse.elseValue){
+			return term;
+		}
+
+		return flSharedTermNewIfElse(condition, thenValue, elseValue, env);
+	} break;
+
+
+	case FL_SHARED_TERM_LET:
+	{
+		int isRecursive = (term->let.isRecursive);
+		size_t idInAffect = isRecursive ? idToReplace+1 : idToReplace;
+		FLSharedTerm * affect = flSharedTermReplaceLocalVar(term->let.affect, idInAffect, replacementTerm, env);
+
+		if (affect == NULL){
+			return NULL;
+		}
+
+		if (term->let.following == NULL){
+			if (affect == term->let.affect){
+				return term;
+			}
+			return flSharedTermNewLet(affect, NULL, isRecursive, env);
+		}
+
+		FLSharedTerm * following = flSharedTermReplaceLocalVar(term->let.following, idToReplace+1, replacementTerm, env);
+
+		if (following == NULL){
+			return NULL;
+		}
+
+		if (affect == term->let.affect && following == term->let.following){
+			return term;
+		}
+
+		return flSharedTermNewLet(affect, following, isRecursive, env);
+	} break;
+
+	default:
+		break;
+	}
+
+	return NULL;
+}
+
+
+#define FL_DUMMY_EVALUATION
+
+FLSharedTerm * flSharedTermEvaluateOneStep(FLSharedTerm * term, FLEnvironment * env)
+{
+	int ret;
+
+	switch(term->type){
+
+	case FL_SHARED_TERM_VAR:
+	{
+		FL_DEBUG_PRINT("FL_SHARED_TERM_VAR: %s var %s of id %zu", term->var.isGlobal ? "global" : "local",
+				term->var.isGlobal ? env->globalVarNameStack[term->var.id] : "", term->var.id);
+
+		if (term->var.isGlobal){
+			FL_DEBUG_PRINT("\tReturning %s", env->globalVarNameStack[term->var.id]);
+			return term;
+		}
+
+		FLSharedTerm * correspoundingTerm = flEnvironmentExecutionTermFromVarId(env, term->var.id, term->var.isGlobal);
+
+		if (correspoundingTerm == NULL){
+			FL_DEBUG_PRINT("\tCorresponding term is NULL, returning %p", term);
+			return term;
+		}
+
+		FL_DEBUG_PRINT("\tReturning %p", correspoundingTerm);
+		return correspoundingTerm;
+	} break;
+
+	case FL_SHARED_TERM_INTEGER:
+		FL_DEBUG_PRINT("FL_SHARED_TERM_INTEGER: %llu", term->integer);
+		FL_DEBUG_PRINT("\tReturning %p", term);
+		return term;
+
+	case FL_SHARED_TERM_FUN:
+	{
+		FL_DEBUG_PRINT("FL_SHARED_TERM_FUN");
+
 		ret = flEnvironmentPushExecutionTerm(env, NULL);
 
 		if (ret != EXIT_SUCCESS){
+			FL_DEBUG_PRINT("\tReturning NULL");
 			return NULL;
 		}
 
 		FLSharedTerm * evaluatedBody = flSharedTermEvaluate(term->fun.body, env);
+
 		flEnvironmentPopExecutionTerm(env, 1);
 
 		if (evaluatedBody == NULL){
+			FL_DEBUG_PRINT("\tReturning NULL");
 			return NULL;
 		}
 
 		if (evaluatedBody == term->fun.body){
+			FL_DEBUG_PRINT("\tReturning %p", term);
 			return term;
 		}
 
@@ -60,6 +201,8 @@ FLSharedTerm * flSharedTermEvaluate(FLSharedTerm * term, FLEnvironment * env)
 
 	case FL_SHARED_TERM_CALL:
 	{
+		FL_DEBUG_PRINT("FL_SHARED_TERM_CALL");
+
 		FLSharedTerm * evaluatedArg;
 
 		if (term->call.isACallByName){
@@ -67,19 +210,37 @@ FLSharedTerm * flSharedTermEvaluate(FLSharedTerm * term, FLEnvironment * env)
 		} else {
 			evaluatedArg = flSharedTermEvaluate(term->call.arg, env);
 			if (evaluatedArg == NULL){
+				FL_DEBUG_PRINT("\tReturning NULL");
 				return NULL;
 			}
 		}
 
 		FLSharedTerm * evaluatedFunc = flSharedTermEvaluate(term->call.func, env);
 
-		if (evaluatedFunc == NULL){
+		if (evaluatedFunc == NULL
+				|| evaluatedFunc->type == FL_SHARED_TERM_INTEGER){
+			FL_DEBUG_PRINT("\tReturning NULL");
 			return NULL;
 		}
 
-		if (evaluatedFunc->type == FL_SHARED_TERM_INTEGER){
-			return NULL;
+#ifdef FL_DUMMY_EVALUATION
+		if (evaluatedFunc->type == FL_SHARED_TERM_VAR && evaluatedFunc->var.isGlobal){
+
+			FLSharedTerm * globTerm = flEnvironmentExecutionTermFromVarId(env, evaluatedFunc->var.id, 1);
+			if (globTerm == NULL){
+				FL_DEBUG_PRINT("\tReturning NULL");
+				return NULL;
+			}
+
+			FLSharedTerm * newCall = flSharedTermNewCall(globTerm, evaluatedArg, term->call.isACallByName, env);
+			if (newCall == NULL){
+				FL_DEBUG_PRINT("\tReturning NULL");
+				return NULL;
+			}
+
+			return flSharedTermEvaluate(newCall, env);
 		}
+#endif
 
 		if (evaluatedFunc->type != FL_SHARED_TERM_FUN){
 			if (evaluatedFunc == term->call.func && evaluatedArg == term->call.arg){
@@ -88,18 +249,40 @@ FLSharedTerm * flSharedTermEvaluate(FLSharedTerm * term, FLEnvironment * env)
 			return flSharedTermNewCall(evaluatedFunc, evaluatedArg, term->call.isACallByName, env);
 		}
 
-		flEnvironmentPushExecutionTerm(env, evaluatedArg);
+#ifndef FL_DUMMY_EVALUATION
+
+		ret = flEnvironmentPushExecutionTerm(env, evaluatedArg);
+
+		if (ret != EXIT_SUCCESS){
+			FL_DEBUG_PRINT("\tReturning NULL");
+			return NULL;
+		}
+
 		FLSharedTerm * output = flSharedTermEvaluate(evaluatedFunc->fun.body, env);
 		flEnvironmentPopExecutionTerm(env, 1);
+
 		return output;
+#else
+
+		FLSharedTerm * replacedArgBody = flSharedTermReplaceLocalVar(evaluatedFunc->fun.body, 0, evaluatedArg, env);
+
+		if (replacedArgBody == NULL){
+			return NULL;
+		}
+
+		return flSharedTermEvaluate(replacedArgBody, env);
+#endif
 	} break;
 
 	case FL_SHARED_TERM_IF_ELSE:
 	{
+		FL_DEBUG_PRINT("FL_SHARED_TERM_IF_ELSE");
+
 		/* TODO : better strategy */
 		FLSharedTerm * evaluatedCondition = flSharedTermEvaluate(term->ifElse.condition, env);
 
 		if (evaluatedCondition == NULL){
+			FL_DEBUG_PRINT("\tReturning NULL");
 			return NULL;
 		}
 
@@ -111,22 +294,51 @@ FLSharedTerm * flSharedTermEvaluate(FLSharedTerm * term, FLEnvironment * env)
 			}
 		}
 
+#ifndef FL_DUMMY_EVALUATION
+		FLSharedTerm * evaluatedThenValue = flSharedTermEvaluate(term->ifElse.thenValue, env);
+
+		if (evaluatedThenValue == NULL){
+			FL_DEBUG_PRINT("\tReturning NULL");
+			return NULL;
+		}
+
+		FLSharedTerm * evaluatedElseValue = flSharedTermEvaluate(term->ifElse.elseValue, env);
+
+		if (evaluatedElseValue == NULL){
+			FL_DEBUG_PRINT("\tReturning NULL");
+			return NULL;
+		}
+
+		if (evaluatedCondition == term->ifElse.condition
+				&& evaluatedThenValue == term->ifElse.thenValue
+				&&  evaluatedElseValue == term->ifElse.elseValue){
+			return term;
+		}
+		 return flSharedTermNewIfElse(evaluatedCondition, evaluatedThenValue, evaluatedElseValue, env);
+#else
+
 		if (evaluatedCondition == term->ifElse.condition){
 			return term;
 		}
 
 		return flSharedTermNewIfElse(evaluatedCondition, term->ifElse.thenValue, term->ifElse.elseValue, env);
+#endif
 	} break;
 
 	case FL_SHARED_TERM_REF:
+		FL_DEBUG_PRINT("FL_SHARED_TERM_REF");
+
 		return flSharedTermEvaluate(term->ref, env);
 
 
 	case FL_SHARED_TERM_LET:
 	{
+		FL_DEBUG_PRINT("FL_SHARED_TERM_LET");
+
 		if (term->let.isRecursive){
 			ret = flEnvironmentPushExecutionTerm(env, term->let.affect);
 			if (ret != EXIT_SUCCESS){
+				FL_DEBUG_PRINT("\tReturning NULL");
 				return NULL;
 			}
 		}
@@ -138,6 +350,7 @@ FLSharedTerm * flSharedTermEvaluate(FLSharedTerm * term, FLEnvironment * env)
 		}
 
 		if (evaluatedAffect == NULL){
+			FL_DEBUG_PRINT("\tReturning NULL");
 			return NULL;
 		}
 
@@ -148,6 +361,7 @@ FLSharedTerm * flSharedTermEvaluate(FLSharedTerm * term, FLEnvironment * env)
 		ret = flEnvironmentPushExecutionTerm(env, evaluatedAffect);
 
 		if (ret != EXIT_SUCCESS){
+			FL_DEBUG_PRINT("\tReturning NULL");
 			return NULL;
 		}
 
@@ -162,10 +376,37 @@ FLSharedTerm * flSharedTermEvaluate(FLSharedTerm * term, FLEnvironment * env)
 		break;
 	}
 
+	FL_DEBUG_PRINT("\tDefault: returning NULL");
 	return NULL;
 }
 
 
+
+FLSharedTerm * flSharedTermEvaluate(FLSharedTerm * term, FLEnvironment * env)
+{
+	if (term == NULL){
+		return NULL;
+	}
+
+	FLSharedTerm * output = term;
+	FLSharedTerm * newOutput;
+
+	while (1){
+		newOutput = flSharedTermEvaluateOneStep(output, env);
+
+		return newOutput;
+
+		if (newOutput == NULL){
+			return NULL;
+		}
+
+		if (newOutput == output){
+			return output;
+		}
+
+		output = newOutput;
+	}
+}
 
 
 #if 0

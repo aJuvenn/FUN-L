@@ -36,5 +36,15 @@
 #define FL_FLAG_IS_SET(value, flags) ((value) & (flags))
 
 
+#ifdef FL_DEBUG
+#define FL_DEBUG_PRINT(...)\
+	do {\
+		fprintf(stdout, "[FUN-L][%s][line %u] ", __FUNCTION__, __LINE__);\
+		fprintf(stdout, __VA_ARGS__);\
+		fprintf(stdout, "\n");\
+	} while (0)
+#else
+#define FL_DEBUG_PRINT(...)
+#endif
 
 #endif /* FUNL__UTILS_H_ */

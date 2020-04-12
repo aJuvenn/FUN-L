@@ -48,11 +48,14 @@ FLSharedTerm * flSharedTermNewRef(FLSharedTerm * pointedTerm, FLEnvironment * co
 }
 
 
-FLSharedTerm * flSharedTermNewVar(size_t id, FLEnvironment * const env)
+FLSharedTerm * flSharedTermNewVar(size_t id, int isGlobal, FLEnvironment * const env)
 {
 	FLSharedTerm * output = flSharedTermNew(env);
 	output->type = FL_SHARED_TERM_VAR;
-	output->varId = id;
+
+	/* TODO : add reference ? */
+	output->var.id = id;
+	output->var.isGlobal = isGlobal;
 
 	return output;
 }
@@ -160,6 +163,8 @@ void flSharedTermFree(FLSharedTerm * term, FLEnvironment * const env)
 		FL_SHARED_TERM_REMOVE_REFERENCE(term->let.following, env);
 		break;
 
+	case FL_SHARED_TERM_VAR:
+		/* TODO : remove reference ? */
 	default:
 		break;
 	}
